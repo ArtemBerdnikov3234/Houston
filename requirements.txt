@@ -1,0 +1,12 @@
+# Сбор и очистка данных
+requests==2.34.2
+beautifulsoup4==4.15.0
+
+# Чанкинг (LangChain)
+langchain-core==1.6.10
+langchain-text-splitters==1.1.3
+
+# Векторная БД и эмбеддинги (следующий шаг: индексация в Qdrant)
+qdrant-client==1.19.1
+langchain-qdrant==1.1.0
+fastembed==0.9.0

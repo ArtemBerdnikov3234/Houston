@@ -3,11 +3,11 @@
 Примеры использования:
 1. Загрузка в виде списка Python-словарей:
    from rag_loader import load_clean_data
-   docs = load_clean_data("llis_all_1000.json")
+   docs = load_clean_data("llis_full.json")
 
 2. Загрузка напрямую в объекты LangChain Document (с сохранением всех метаданных):
    from rag_loader import to_langchain_documents
-   langchain_docs = to_langchain_documents("llis_all_1000.json")
+   langchain_docs = to_langchain_documents("llis_full.json")
 
 3. Быстрая проверка и статистика:
    python rag_loader.py
@@ -18,7 +18,7 @@ import os
 from typing import Any, Dict, List, Optional
 
 
-def load_clean_data(filepath: str = "llis_all_1000.json") -> List[Dict[str, Any]]:
+def load_clean_data(filepath: str = "llis_full.json") -> List[Dict[str, Any]]:
     """Загружает подготовленный датасет из JSON или JSONL файла."""
     if not os.path.exists(filepath):
         raise FileNotFoundError(f"Файл не найден: {filepath}")
@@ -35,7 +35,7 @@ def load_clean_data(filepath: str = "llis_all_1000.json") -> List[Dict[str, Any]
             return json.load(f)
 
 
-def to_langchain_documents(filepath: str = "llis_all_1000.json", use_sections: bool = False):
+def to_langchain_documents(filepath: str = "llis_full.json", use_sections: bool = False):
     """Преобразует записи в список LangChain Document объектов.
     
     Если библиотека langchain_core не установлена, возвращает легковесный аналог Document.
@@ -78,11 +78,20 @@ def to_langchain_documents(filepath: str = "llis_all_1000.json", use_sections: b
     return docs
 
 
+def load_chunks(filepath: str = "llis_chunks.jsonl"):
+    """Загружает готовые чанки (результат build_chunks.py) как LangChain Document с ID."""
+    from langchain_core.documents import Document
+
+    with open(filepath, "r", encoding="utf-8") as f:
+        rows = [json.loads(line) for line in f if line.strip()]
+    return [Document(id=r["id"], page_content=r["page_content"], metadata=r["metadata"]) for r in rows]
+
+
 if __name__ == "__main__":
     print("=" * 60)
     print("  Проверка готовности данных для RAG")
     print("=" * 60)
-    docs = to_langchain_documents("llis_all_1000.json")
+    docs = to_langchain_documents("llis_full.json")
     print(f"Успешно загружено документов: {len(docs)}")
     print(f"Пример метаданных первого документа:")
     for k, v in docs[0].metadata.items():

@@ -56,6 +56,9 @@ Desktop.ini
 temp/
 scratch/
 
+# Qdrant data volume (docker-compose)
+qdrant_storage/
+
 # Legacy / experimental initial runs
 llis_msfc.json
 llis_msfc.jsonl

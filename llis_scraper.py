@@ -5,7 +5,7 @@
 
 Установка:  pip install requests beautifulsoup4
 Запуск:     python llis_scraper.py
-Результат:  llis_all_1000.json и llis_all_1000.jsonl
+Результат:  llis_full.json и llis_full.jsonl (вся база LLIS)
 """
 
 import html
@@ -20,11 +20,12 @@ from bs4 import BeautifulSoup
 
 # ==================== КОНФИГУРАЦИЯ ====================
 URL = "https://llis.nasa.gov/llis/lesson/_search"
-MAX_RECORDS = 1000      # Целевое число документов (None = вся база, ~2127 записей)
+MAX_RECORDS = None      # Целевое число документов (None = вся база)
 ORG = None              # None = все центры NASA; или "msfc", "ksc", "jpl", "jsc", "gsfc", "arc", "larc"
 PAGE_SIZE = 50          # Размер пачки в одном API-запросе
 PAUSE = 0.4             # Пауза между запросами (сек)
-OUTPUT_PREFIX = f"llis_{ORG or 'all'}_{MAX_RECORDS or 'all'}"
+RETRIES = 4             # Число повторов запроса при сетевой ошибке
+OUTPUT_PREFIX = "llis_full" if not (ORG or MAX_RECORDS) else f"llis_{ORG or 'all'}_{MAX_RECORDS or 'all'}"
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)",
@@ -53,11 +54,25 @@ def build_payload(start: int, size: int) -> dict:
 
 
 def fetch_page(session: requests.Session, start: int, size: int) -> dict:
-    """Запрашивает порцию документов из API NASA LLIS с таймаутом."""
+    """Запрашивает порцию документов из API NASA LLIS с таймаутом и повторами."""
     body = json.dumps(build_payload(start, size))
-    resp = session.post(URL, data=body, headers=HEADERS, timeout=30)
-    resp.raise_for_status()
-    return resp.json()
+    for attempt in range(1, RETRIES + 1):
+        try:
+            resp = session.post(URL, data=body, headers=HEADERS, timeout=30)
+            resp.raise_for_status()
+            return resp.json()
+        except requests.RequestException as e:
+            if attempt == RETRIES:
+                raise
+            wait = 2 ** attempt
+            print(f"  !! Ошибка запроса (from={start}): {e}. Повтор через {wait} c...")
+            time.sleep(wait)
+
+
+def get_total(data: dict) -> int:
+    """Число документов в базе (поддерживает int и формат ES 7+ {"value": N})."""
+    total = data["hits"]["total"]
+    return total["value"] if isinstance(total, dict) else int(total)
 
 
 def is_dummy_value(text: str) -> bool:
@@ -305,7 +320,7 @@ def main():
 
     session = requests.Session()
     first = fetch_page(session, 0, PAGE_SIZE)
-    total_in_db = first["hits"]["total"]
+    total_in_db = get_total(first)
     target_count = min(total_in_db, MAX_RECORDS) if MAX_RECORDS else total_in_db
 
     print(f"Доступно в базе     : {total_in_db}")
@@ -314,6 +329,7 @@ def main():
 
     records: List[dict] = []
     seen = set()
+    rejected = 0
     start = 0
     data = first
 
@@ -329,6 +345,8 @@ def main():
                 doc = parse_hit(h)
                 if doc:
                     records.append(doc)
+                else:
+                    rejected += 1
 
                 if MAX_RECORDS and len(records) >= MAX_RECORDS:
                     break
@@ -355,7 +373,7 @@ def main():
         json.dump(records, f, ensure_ascii=False, indent=2)
 
     print("=" * 60)
-    print(f"УСПЕШНО СОХРАНЕНО: {len(records)} документов")
+    print(f"УСПЕШНО СОХРАНЕНО: {len(records)} документов (уникальных ID: {len(seen)}, отбраковано пустых: {rejected})")
     print(f"  - JSON  : {os.path.abspath(json_path)}")
     print(f"  - JSONL : {os.path.abspath(jsonl_path)}")
     print("=" * 60)

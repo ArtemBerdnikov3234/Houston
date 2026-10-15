@@ -1,0 +1,13 @@
+# Векторная БД Qdrant для AeroRAG.
+# Запуск:   docker compose up -d
+# Проверка: http://localhost:6333/healthz  |  дашборд: http://localhost:6333/dashboard
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.19.2
+    container_name: aerorag-qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"   # REST API + веб-дашборд
+      - "6334:6334"   # gRPC
+    volumes:
+      - ./qdrant_storage:/qdrant/storage

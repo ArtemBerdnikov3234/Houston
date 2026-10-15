@@ -16,7 +16,7 @@ import sys
 sys.stdout.reconfigure(encoding="utf-8")
 
 # Load full NASA LLIS dataset
-dataset_path = "llis_all_1000.json"
+dataset_path = "llis_full.json"
 with open(dataset_path, "r", encoding="utf-8") as f:
     llis_data = json.load(f)
 

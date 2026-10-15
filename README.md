@@ -4,66 +4,102 @@
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![Database: NASA LLIS](https://img.shields.io/badge/Data-NASA%20LLIS-orange.svg)](https://llis.nasa.gov/)
+[![Vector DB: Qdrant](https://img.shields.io/badge/Vector%20DB-Qdrant%201.19-dc244c.svg)](https://qdrant.tech/)
+[![Framework: LangChain](https://img.shields.io/badge/Framework-LangChain-1c3c3c.svg)](https://www.langchain.com/)
 [![Benchmark: Gold Set 50](https://img.shields.io/badge/Benchmark-50%20QA%20Pairs-success.svg)](./gold_set_50.csv)
-[![Status: Phase 1 Complete](https://img.shields.io/badge/Phase%201-Data%20%26%20Benchmark%20Ready-brightgreen.svg)]()
+[![Status: Phase 2](https://img.shields.io/badge/Phase%202-Qdrant%20%26%20Dataset%20Ready-brightgreen.svg)]()
 
 ---
 
 ## 📌 О проекте
 
-При проектировании космических аппаратов, ракетных двигателей и стартовых комплексов критически важно не повторять прошлых ошибок. NASA ведет официальную базу технических расследований — **NASA Lessons Learned Information System (LLIS)**. В ней задокументированы сотни реальных аварий, отказов и выводов экспертных комиссий (миссии *Curiosity*, *James Webb Space Telescope (JWST)*, *SMAP*, *МКС*, стартовые комплексы *KSC* и т.д.).
+При проектировании космических аппаратов, ракетных двигателей и стартовых комплексов критически важно не повторять прошлых ошибок. NASA ведет официальную базу технических расследований — **NASA Lessons Learned Information System (LLIS)**. В ней задокументированы тысячи реальных аварий, отказов и выводов экспертных комиссий (миссии *Curiosity*, *James Webb Space Telescope (JWST)*, *SMAP*, *МКС*, стартовые комплексы *KSC* и т.д.).
 
-**Цель проекта AeroRAG:**  
+**Цель проекта AeroRAG:**
 Создать production-grade RAG-систему, позволяющую инженеру на естественном языке мгновенно находить первопричины поломок оборудования, прецеденты аналогичных аварий и проверенные инженерные предписания NASA.
 
 ---
 
 ## 🏗 Архитектура и технологический стек
 
-Архитектура системы построена по методологии **Advanced RAG** с гибридным поиском, реранкингом и оценкой качества:
-
 ```mermaid
 flowchart TD
-    A[NASA LLIS REST API] -->|Requests + BS4 + Regex| B[Очищенные Markdown-документы с метаданными]
-    B -->|MarkdownNodeParser + SentenceWindow| C[Иерархические чанки LlamaIndex]
-    C -->|BAAI/bge-base-en-v1.5| D[(PostgreSQL + pgvector)]
-    E[Запрос инженера] -->|Dense Vector + BM25| D
-    D -->|Top-20 кандидатов| F[BAAI/bge-reranker-base]
-    F -->|Top-3/5 релевантных чанка| G[Google Gemini 1.5 Flash]
+    A[NASA LLIS REST API] -->|Requests + BS4 + Regex| B[2 117 очищенных Markdown-уроков с метаданными]
+    B -->|LangChain: секции + RecursiveCharacterTextSplitter| C[11 188 чанков с контекстными заголовками]
+    C -->|FastEmbed: bge-base-en-v1.5 + BM25| D[(Qdrant: dense + sparse векторы)]
+    E[Запрос инженера] -->|Hybrid search, RRF| D
+    D -->|Top-20 кандидатов| F[Reranker]
+    F -->|Top-3/5 релевантных чанка| G[LLM]
     G --> H[Итоговый аргументированный ответ]
-    I[Gold Set: 50 QA пар] -.->|Оценка качества| J[Ragas / LlamaIndex Eval]
+    I[Gold Set: 50 QA пар] -.->|Оценка качества| J[check_qdrant.py / Ragas]
 ```
 
 ### Сводная таблица стека
 
-| Этап (*Stage*) | Выбранная технология (*Choice*) | Обоснование выбора (*Why*) | Статус в проекте |
+| Этап (*Stage*) | Технология (*Choice*) | Обоснование (*Why*) | Статус |
 | :--- | :--- | :--- | :---: |
-| **1. Ingestion** | `Python`, `Requests`, `BeautifulSoup4`, `Regex` | NASA API возвращает JSON; BS4 и Regex глубоко очищают HTML без разрыва списков и таблиц. | **Реализовано** ✅ |
-| **2. Chunking** | `LlamaIndex` (`MarkdownNodeParser`, `SentenceWindowNodeParser`) | Деление по секциям инцидента; оконный парсер связывает точный факт с расширенным контекстом. | **Готово к интеграции** ⚙️ |
-| **3. Embeddings** | `BAAI/bge-base-en-v1.5` (локально через HuggingFace) | Топовая открытая модель для английского языка на MTEB бенчмарке, бесплатная, локальный запуск. | **В плане (Phase 2)** ⏳ |
-| **4. Storage & Search** | `PostgreSQL` + `pgvector` (Hybrid with BM25) | Векторный семантический поиск + полнотекстовый BM25 по точным инженерным шифрам и номерам стандартов. | **В плане (Phase 2)** ⏳ |
-| **5. Reranking** | `BAAI/bge-reranker-base` (Cross-Encoder) | Отсекает ложные срабатывания, фильтрует контекст и оставляет топ-3–5 самых релевантных фрагментов. | **В плане (Phase 2)** ⏳ |
-| **6. Generation** | `Google Gemini 1.5 Flash` | Быстрая генерация с опорой на контекст, 1M+ токенов окна, бесплатный доступ через Google AI Studio. | **В плане (Phase 2)** ⏳ |
-| **7. Evaluation** | `Ragas` + **Gold Set (50 QA пар)** | Проверка метрик *Context Recall*, *Context Precision* и фактологичности (*Faithfulness*) по эталону. | **Бенчмарк готов** ✅ |
+| **1. Ingestion** | `Requests`, `BeautifulSoup4`, `Regex` | NASA API возвращает JSON с HTML внутри; BS4 и Regex очищают HTML без разрыва списков и таблиц. | ✅ |
+| **2. Chunking** | `LangChain` (`langchain-text-splitters`) | Деление по секциям урока + рекурсивная нарезка длинных секций; в каждом чанке заголовок урока и секции. | ✅ |
+| **3. Embeddings** | `BAAI/bge-base-en-v1.5` (dense) + `Qdrant/bm25` (sparse) через `FastEmbed` | Сильная открытая модель для английского, ONNX-инференс на CPU без PyTorch; BM25 ловит точные шифры и номера стандартов. | ✅ |
+| **4. Vector DB & Search** | `Qdrant 1.19` в Docker + `langchain-qdrant` | Нативные dense + sparse векторы и гибридный поиск (RRF) в одной коллекции, фильтрация по payload-индексам. | ✅ |
+| **5. Reranking** | Cross-Encoder (напр. `bge-reranker-base`) | Отсекает ложные срабатывания, оставляет топ-3–5 фрагментов. | ⏳ |
+| **6. Generation** | LLM (выбор на следующем этапе) | Генерация ответа строго по найденному контексту со ссылками на уроки. | ⏳ |
+| **7. Evaluation** | Gold Set 50 + `check_qdrant.py`, далее `Ragas` | Hit@k / MRR ретривера сейчас; *Faithfulness*, *Context Recall* после подключения LLM. | ⚙️ |
 
 ---
 
-## 🛠 Что уже реализовано (Текущий этап / Phase 1)
+## 🛠 Что реализовано
 
-1. **Парсинг и детерминированная пагинация:**
-   * Написан модульный парсер к Elasticsearch API базы NASA LLIS ([llis_scraper.py](llis_scraper.py)).
-   * Выгружено ровно **1 000 самых актуальных отчетов** (2000–2025 гг.) со всех ключевых центров NASA (`KSC`, `JPL`, `MSFC`, `JSC`, `ARC`, `GSFC` и др.).
-2. **Глубокая очистка данных (HTML → Markdown Pipeline):**
-   * Преобразование списков `<ul>` и `<ol>` в валидный Markdown (`- `, `1. `) без потери структуры.
-   * Конвертация таблиц `<table>` в синтаксис Markdown таблиц.
-   * Форматирование инженерных индексов (`H_2O`, `10^6`), декодирование сущностей (`&deg;` → `°`, `&plusmn;` → `±`, `&reg;` → `®`).
-   * Полная фильтрация артефактов и заглушек (`"None"`, `"N/A"`, `\xa0`, дубликаты пробелов).
-3. **Обогащение метаданными:**
-   * Каждый урок структурирован заголовками (`## Driving Event`, `## Lesson Learned`, `## Recommendation`) и содержит метаданные: `lesson_id`, `title`, `date`, `year`, `org_code`, `categories`, `url`.
-4. **Эталонный датасет для валидации (Gold Set 50):**
-   * Сформировано **50 эталонных вопросов на английском языке** по грамматическим правилам (Wh-words, инверсия глаголов).
-   * Ко всем вопросам даны **прямые, неизмененные фактологические ответы** из датасета с подтверждением точной цитатой (`Context_Quote`) и ссылкой на первоисточник.
-   * Экспортировано в **CSV (UTF-8 BOM для Google Таблиц)**, **JSON** и **Markdown**.
+### Phase 1 — данные и бенчмарк
+1. **Парсинг всей базы LLIS** ([llis_scraper.py](llis_scraper.py)): запросы к Elasticsearch API с детерминированной сортировкой `[{"lesson_date": "desc"}, {"_id": "asc"}]`, повторы при сетевых ошибках. Из 2 135 записей сохранено **2 117 уроков**, 18 пустых отбраковано.
+2. **Очистка HTML → Markdown:** списки `<ul>/<ol>`, таблицы, индексы (`H_2O`, `10^6`), HTML-сущности (`&deg;` → `°`), фильтрация заглушек (`None`, `N/A`, `TBD`).
+3. **Метаданные:** `lesson_id`, `title`, `date`, `year`, `org_code`, `categories`, `url` и структура `## Abstract / Driving Event / Lesson Learned / Recommendation`.
+4. **Gold Set 50** ([generate_gold_set.py](generate_gold_set.py)): 50 вопросов на английском с точными ответами, цитатой-подтверждением (`Context_Quote`) и ссылкой на урок. Экспорт в CSV (UTF-8 BOM), JSON, Markdown.
+
+### Phase 2 — обработанный датасет и Qdrant
+5. **Чанкинг** ([build_chunks.py](build_chunks.py)):
+   * урок делится по смысловым секциям — чанк не смешивает «что случилось» и «что рекомендовано»;
+   * длинные секции режутся `RecursiveCharacterTextSplitter` (1 200 символов, перекрытие 150);
+   * в начало каждого чанка добавляется `[NASA LLIS #id] Название` + `Section: ...`;
+   * отбрасываются заглушки (`See attached PDF`, `See Lessons Learned`, `[D]`) и обрывки без слов, куски короче 200 символов приклеиваются к соседнему чанку;
+   * детерминированный ID чанка `<lesson_id>:<section>:<index>` → UUID точки в Qdrant, поэтому повторная индексация не создает дублей;
+   * все 50 цитат Gold Set целиком лежат внутри одного чанка.
+6. **Qdrant** ([docker-compose.yml](docker-compose.yml), [qdrant_store.py](qdrant_store.py), [index_qdrant.py](index_qdrant.py)):
+   * коллекция `nasa_llis`: вектор `dense` (768, cosine) + вектор `sparse` (BM25, IDF на стороне Qdrant);
+   * payload-индексы по `lesson_id`, `org_code`, `section`, `categories`, `year` для фильтрации;
+   * доступ через LangChain `QdrantVectorStore` в режимах `DENSE`, `SPARSE`, `HYBRID`.
+7. **Проверка** ([check_qdrant.py](check_qdrant.py)): состояние коллекции, демо-запросы, оценка ретривера на Gold Set.
+
+---
+
+## 📊 Характеристики датасета
+
+* **Объем:** 2 117 уроков (вся база LLIS), период **1972–2025**.
+* **Центры NASA:** KSC 481 · JPL 419 · JSC 236 · HQ 206 · MSFC 200 · GSFC 145 · ARC 119 · GRC 116 · LARC 101 · прочие (NESC, AFRC, SSC, WSTF, IVV, WFF) 95.
+* **Заполненность секций:** Driving Event 98% · Lesson Learned 99% · Recommendation 98% · Abstract 48% (в старых уроках аннотации нет).
+* **Длина урока:** медиана 2 367 символов (~590 токенов), максимум 53 408.
+
+**Чанки** (`llis_chunks.jsonl`):
+* **11 188 чанков** из 2 116 уроков (исключен тестовый урок #1937 с текстом «This is only a test»);
+* по секциям: Driving Event 5 258 · Lesson Learned 2 444 · Recommendation 2 401 · Abstract 1 085;
+* длина: медиана ~690 символов, максимум ~1 550 (укладывается в лимит 512 токенов bge-base).
+
+---
+
+## 🎯 Качество поиска на Gold Set
+
+Оценка ретривера `check_qdrant.py` на 50 вопросах Gold Set (11 188 чанков, top-10, CPU):
+
+| Режим | Lesson Hit@1 | Lesson Hit@5 | Lesson Hit@10 | Quote Hit@5 | MRR@10 | мс/запрос |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| Dense (`bge-base-en-v1.5`) | 0.92 | 0.98 | 0.98 | 0.96 | 0.95 | 39 |
+| Sparse (BM25) | 0.96 | 1.00 | 1.00 | 0.98 | 0.98 | 9 |
+| **Hybrid (RRF)** | **0.96** | **1.00** | **1.00** | **1.00** | 0.97 | 38 |
+
+* **Lesson Hit@k** — нужный урок есть среди top-k чанков; **Quote Hit@k** — найден именно чанк с эталонной цитатой; **MRR@10** — средний обратный ранг первого чанка нужного урока.
+* Hybrid — единственный режим, который для всех 50 вопросов находит чанк с цитатой в top-5. Dense промахивается на Q21, BM25 — на одной цитате.
+* **Ограничение:** вопросы Gold Set составлены по тексту уроков и лексически близки к нему, поэтому BM25 здесь особенно силен, а метрики близки к потолку. Для реальных запросов инженеров (перефразированных, без терминов из отчета) ожидаемо ниже; для различения моделей и реранкера понадобится набор более сложных вопросов.
+* Score в гибридном режиме — это оценка RRF (по рангам), а не косинусная близость.
 
 ---
 
@@ -71,99 +107,76 @@ flowchart TD
 
 ```text
 NASA_RAG/
+├── llis_scraper.py       # Сбор и очистка всей базы NASA LLIS -> llis_full.json/.jsonl
+├── llis_full.json(l)     # [Датасет] 2 117 очищенных уроков с метаданными
+├── llis_all_1000.json(l) # [Архив] первая выгрузка 1 000 уроков (Phase 1)
+├── inspect_dataset.py    # Статистика датасета
 │
-├── llis_scraper.py       # [Основной скрипт] Сборщик и препроцессор NASA LLIS
-├── llis_all_1000.json    # [Датасет] 1 000 подготовленных документов (полный JSON)
-├── llis_all_1000.jsonl   # [Датасет] Тот же датасет в формате JSON Lines для стриминга
+├── build_chunks.py       # Чанкинг (LangChain) -> llis_chunks.jsonl
+├── llis_chunks.jsonl     # [Обработанный датасет] 11 188 чанков, готовых к индексации
+├── rag_loader.py         # Загрузка уроков и чанков как LangChain Document
 │
-├── gold_set_50.csv       # [Gold Set] 50 QA-пар для Google Таблиц (с цитатами и ссылками)
-├── gold_set_50.json      # [Gold Set] 50 QA-пар в формате JSON для фреймворка Ragas
-├── gold_set_50.md        # [Gold Set] Подробный Markdown-отчет с разбором каждого вопроса
-├── generate_gold_set.py  # [Скрипт] Генератор и верификатор Gold Set по датасету
+├── docker-compose.yml    # Qdrant v1.19.2
+├── qdrant_store.py       # Конфигурация коллекции, эмбеддинги, LangChain QdrantVectorStore
+├── index_qdrant.py       # Индексация чанков в Qdrant
+├── check_qdrant.py       # Проверка коллекции и оценка поиска на Gold Set
+├── retrieval_eval.json   # Результаты последней оценки
 │
-├── rag_loader.py         # [Утилита] Загрузчик документов в LangChain / LlamaIndex
-├── inspect_dataset.py    # [Аналитика] Быстрая проверка качества и статистики датасета
-└── README.md             # [Документация] Описание архитектуры и инструкция
+├── generate_gold_set.py  # Генератор и верификатор Gold Set
+├── gold_set_50.csv/json/md
+└── requirements.txt
 ```
-
-### Подробное описание файлов
-
-* **[`llis_scraper.py`](llis_scraper.py):** Сердце этапа сбора данных. Делает запросы к API с сортировкой `[{"lesson_date": "desc"}, {"_id": "asc"}]`, чтобы избежать дубликатов при пагинации. Преобразует HTML в чистый Markdown и валидирует наличие полезной информации.
-* **[`gold_set_50.csv`](gold_set_50.csv):** Готовая таблица для проверки домашнего задания. Содержит колонки: `Question_ID`, `Question`, `Ground_Truth_Answer`, `Context_Quote`, `Lesson_ID`, `NASA_Center`, `Document_Title`, `Section`, `Category`, `Review_Notes`, `Source_URL`.
-* **[`rag_loader.py`](rag_loader.py):** Готовый модуль интеграции. Предоставляет функцию `to_langchain_documents()`, которая конвертирует очищенные JSON-файлы в объекты `Document(page_content=..., metadata=...)` для сплиттеров LlamaIndex/LangChain.
-* **[`inspect_dataset.py`](inspect_dataset.py):** Утилита для терминала, рассчитывающая статистику наполненности секций, охват по годам и распределение токенов.
-
----
-
-## 📊 Характеристики подготовленного датасета
-
-* **Объем:** 1 000 уникальных уроков NASA.
-* **Период инцидентов:** с 2000 по 2025 год.
-* **Распределение по космическим центрам:**
-  * Kennedy Space Center (`KSC`): **237**
-  * Jet Propulsion Laboratory (`JPL`): **182**
-  * Marshall Space Flight Center (`MSFC`): **98**
-  * Johnson Space Center (`JSC`): **98**
-  * Ames Research Center (`ARC`): **96**
-  * Goddard Space Flight Center (`GSFC`): **78**
-  * Прочие центры (`SSC`, `LARC`, `GRC`, `HQ`): **211**
-* **Заполненность смысловых секций:**
-  * `Driving Event` (что произошло): **97.9%**
-  * `Lesson Learned` (выводы комиссии): **98.4%**
-  * `Recommendation` (предписания): **98.2%**
-  * `Abstract` (аннотация): **78.0%**
-* **Длина документов:** медиана — **2 859 символов** (~714 токенов).
 
 ---
 
 ## 🚀 Быстрый старт
 
-### 1. Установка зависимостей
 ```bash
+# 1. Окружение
 python -m venv venv
-# Активация: venv\Scripts\activate (Windows) или source venv/bin/activate (Linux/Mac)
-pip install requests beautifulsoup4
+venv\Scripts\activate            # Linux/Mac: source venv/bin/activate
+pip install -r requirements.txt
+
+# 2. Qdrant (нужен Docker Desktop)
+docker compose up -d             # дашборд: http://localhost:6333/dashboard
+
+# 3. Данные (готовые файлы уже в репозитории, шаги можно пропустить)
+python llis_scraper.py           # вся база LLIS -> llis_full.json
+python build_chunks.py           # -> llis_chunks.jsonl
+
+# 4. Индексация (~30 мин на CPU; при первом запуске скачиваются модели ~0.5 ГБ)
+python index_qdrant.py --recreate
+
+# 5. Проверка и оценка
+python check_qdrant.py
 ```
 
-### 2. Сбор данных и предобработка
-```bash
-python llis_scraper.py
-```
-*Скрипт скачает 1 000 свежих уроков NASA и создаст файлы `llis_all_1000.json` и `llis_all_1000.jsonl`.*
-
-### 3. Проверка статистики датасета
-```bash
-python inspect_dataset.py llis_all_1000.json
-```
-
-### 4. Генерация / валидация Gold Set
-```bash
-python generate_gold_set.py
-```
-*Сгенерирует файлы `gold_set_50.csv`, `gold_set_50.json` и `gold_set_50.md`.*
-
-### 5. Использование в коде RAG
+### Использование в коде
 ```python
-from rag_loader import to_langchain_documents
+from qdrant_store import get_vector_store, field_filter
 
-# Загрузка 1 000 документов с метаданными одной строкой:
-documents = to_langchain_documents("llis_all_1000.json")
+store = get_vector_store()  # гибридный поиск: bge-base + BM25, RRF
+docs = store.similarity_search(
+    "Why did the hydraulic pressure gauge rupture?",
+    k=5,
+    filter=field_filter("org_code", "KSC"),
+)
+for d in docs:
+    print(d.metadata["lesson_id"], d.metadata["section"], d.metadata["url"])
 
-print(f"Загружено документов: {len(documents)}")
-print("Пример метаданных:", documents[0].metadata)
+retriever = store.as_retriever(search_kwargs={"k": 20})  # для RAG-цепочки LangChain
 ```
 
 ---
 
-## 📈 План развития (Roadmap / Phase 2)
+## 📈 Roadmap
 
-- [x] Сбор 1 000 отчетов NASA LLIS через REST API
-- [x] Качественная предобработка текста в Markdown и обогащение метаданными
+- [x] Сбор всей базы NASA LLIS (2 117 уроков) через REST API
+- [x] Предобработка текста в Markdown и обогащение метаданными
 - [x] Создание и валидация 50 эталонных QA-пар (Gold Set)
-- [ ] Развертывание PostgreSQL с расширением `pgvector` в Docker
-- [ ] Настройка иерархического чанкинга (`MarkdownNodeParser` + `SentenceWindowNodeParser`) в LlamaIndex
-- [ ] Генерация эмбеддингов через локальную модель `bge-base-en-v1.5`
-- [ ] Настройка гибридного поиска (Reciprocal Rank Fusion: BM25 + pgvector)
-- [ ] Подключение реранкера `bge-reranker-base`
-- [ ] Интеграция LLM Google Gemini 1.5 Flash для генерации ответов
+- [x] Чанкинг по секциям в LangChain
+- [x] Qdrant в Docker, dense (`bge-base-en-v1.5`) + sparse (BM25) векторы
+- [x] Гибридный поиск (RRF) и оценка ретривера на Gold Set
+- [ ] Подключение реранкера (Cross-Encoder)
+- [ ] Выбор LLM и RAG-цепочка генерации ответов со ссылками на уроки
 - [ ] Автоматический расчет метрик Ragas (*Faithfulness*, *Answer Relevance*, *Context Recall*)

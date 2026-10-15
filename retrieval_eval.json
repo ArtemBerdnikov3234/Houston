@@ -1,0 +1,37 @@
+{
+  "DENSE": {
+    "lesson_hit@1": 0.92,
+    "lesson_hit@5": 0.98,
+    "lesson_hit@10": 0.98,
+    "quote_hit@1": 0.68,
+    "quote_hit@5": 0.96,
+    "quote_hit@10": 0.98,
+    "mrr@10": 0.9466666666666668,
+    "missed_question_ids": [
+      21
+    ],
+    "latency_ms": 38.738508224487305
+  },
+  "SPARSE": {
+    "lesson_hit@1": 0.96,
+    "lesson_hit@5": 1.0,
+    "lesson_hit@10": 1.0,
+    "quote_hit@1": 0.76,
+    "quote_hit@5": 0.98,
+    "quote_hit@10": 1.0,
+    "mrr@10": 0.98,
+    "missed_question_ids": [],
+    "latency_ms": 8.620481491088867
+  },
+  "HYBRID": {
+    "lesson_hit@1": 0.96,
+    "lesson_hit@5": 1.0,
+    "lesson_hit@10": 1.0,
+    "quote_hit@1": 0.68,
+    "quote_hit@5": 1.0,
+    "quote_hit@10": 1.0,
+    "mrr@10": 0.9740000000000001,
+    "missed_question_ids": [],
+    "latency_ms": 37.67870903015137
+  }
+}

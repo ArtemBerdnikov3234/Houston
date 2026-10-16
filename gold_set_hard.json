@@ -1,0 +1,1167 @@
+[
+  {
+    "id": 1,
+    "lesson_id": "535",
+    "question": "Why would small ceramic plates glued to a metal block crack when the assembly is chilled down, even though the glue passed tests on flat coupons?",
+    "ground_truth_answer": "Different thermal contraction produces not only shear in the bond but also bending stresses when the mounting lets parts push on each other.",
+    "context_quote": "it can also produce bending stresses if the mounting design is not carefully planned for cryogenic temperatures.",
+    "section": "Lesson Learned",
+    "category": "Physical & Thermal Mechanics",
+    "review_notes": "Paraphrased: no 'cryogenic', 'epoxy', 'CTE' in the question.",
+    "relevant_lesson_ids": [
+      "535"
+    ],
+    "quote_chunk_ids": [
+      "535:lesson_learned:0"
+    ],
+    "lexical_overlap": 0.0,
+    "document_title": "Design of Bonded Parts for Cryogenic Temperatures",
+    "nasa_center": "LARC",
+    "url": "https://llis.nasa.gov/lesson/535",
+    "date": "1996-11-01",
+    "year": 1996
+  },
+  {
+    "id": 2,
+    "lesson_id": "535",
+    "question": "What assembly change finally stopped the substrate boards on the copper cube from breaking during cooldown?",
+    "ground_truth_answer": "Mounting the boards so that they were not in contact with each other.",
+    "context_quote": "When the MIDAS cube was assembled with the boards not in contact, so that no stresses would be produced during shrinkage, the boards did not shatter during cooldown.",
+    "section": "Evidence",
+    "category": "Corrective Action Evidence",
+    "review_notes": "Evidence section: confirms the fix worked.",
+    "relevant_lesson_ids": [
+      "535"
+    ],
+    "quote_chunk_ids": [
+      "535:evidence:0"
+    ],
+    "lexical_overlap": 0.3,
+    "document_title": "Design of Bonded Parts for Cryogenic Temperatures",
+    "nasa_center": "LARC",
+    "url": "https://llis.nasa.gov/lesson/535",
+    "date": "1996-11-01",
+    "year": 1996
+  },
+  {
+    "id": 3,
+    "lesson_id": "487",
+    "question": "Can rubber or plastic parts make a thruster feed system misbehave from propellant fumes even when there is no chemical attack?",
+    "ground_truth_answer": "Yes: non-metallic components can swell in propellant vapor and cause malfunction even without chemical incompatibility.",
+    "context_quote": "Swelling of non-metallic components upon exposure to propellant vapors can result in propulsion system malfunction even if no chemical incompatibility exists.",
+    "section": "Lesson Learned",
+    "category": "Materials Compatibility",
+    "review_notes": "Paraphrased ('rubber or plastic parts', 'fumes').",
+    "relevant_lesson_ids": [
+      "487"
+    ],
+    "quote_chunk_ids": [
+      "487:lesson_learned:0"
+    ],
+    "lexical_overlap": 0.27,
+    "document_title": "Long Term Materials Compatibility in Propulsion Systems (1993)",
+    "nasa_center": "JPL",
+    "url": "https://llis.nasa.gov/lesson/487",
+    "date": "1997-01-16",
+    "year": 1997
+  },
+  {
+    "id": 4,
+    "lesson_id": "394",
+    "question": "How do you get a believable lifetime estimate for a spacecraft's rotating actuator before signing off the design?",
+    "ground_truth_answer": "Run life cycle testing under realistic conditions before final design acceptance and flight qualification.",
+    "context_quote": "On mission critical rotating mechanical equipment, life cycle testing should be performed under realistic conditions to obtain a reasonably accurate life-time forecast prior to final design acceptance and flight qualification.",
+    "section": "Recommendation",
+    "category": "Test & Verification Practice",
+    "review_notes": "Voyager scan platform lesson (1995); question does not name Voyager.",
+    "relevant_lesson_ids": [
+      "394"
+    ],
+    "quote_chunk_ids": [
+      "394:recommendation:0"
+    ],
+    "lexical_overlap": 0.25,
+    "document_title": "Voyager Scan Platform Problems",
+    "nasa_center": "JPL",
+    "url": "https://llis.nasa.gov/lesson/394",
+    "date": "1995-05-30",
+    "year": 1995
+  },
+  {
+    "id": 5,
+    "lesson_id": "642",
+    "question": "Why can't we assume a propellant tank made of supposedly nonmagnetic steel won't disturb the spacecraft's attitude?",
+    "ground_truth_answer": "A component can have a significant magnetic moment despite non-magnetic constituent materials, e.g. magnetized during fabrication or handling.",
+    "context_quote": "A spacecraft component may possess a significant magnetic moment despite the non-magnetic characteristics of the constituent materials.",
+    "section": "Lesson Learned",
+    "category": "Root Cause Analysis",
+    "review_notes": "Paraphrased; no 'magnetized'/'stainless' wording from the lesson learned.",
+    "relevant_lesson_ids": [
+      "642"
+    ],
+    "quote_chunk_ids": [
+      "642:lesson_learned:0"
+    ],
+    "lexical_overlap": 0.1,
+    "document_title": "\"Non-Magnetic\" Materials May Become Magnetized",
+    "nasa_center": "JPL",
+    "url": "https://llis.nasa.gov/lesson/642",
+    "date": "2000-01-13",
+    "year": 2000
+  },
+  {
+    "id": 6,
+    "lesson_id": "1040",
+    "question": "Why is fixing Teflon creep out of shuttle thruster valve seats a design problem rather than a matter of choosing a better material?",
+    "ground_truth_answer": "Plastics and metals differ in thermal expansion by an order of magnitude, so engineering approaches (seal entrapment, time at temperature) are needed instead of materials approaches.",
+    "context_quote": "Since the coefficients of thermal expansion of plastics and metals differ by an order of magnitude, preventing unwanted seal extrusion entails implementation of appropriate engineering rather than materials approaches.",
+    "section": "Recommendation",
+    "category": "Physical & Thermal Mechanics",
+    "review_notes": "WSTF lesson (2001); 'Teflon creep' paraphrases 'PTFE seal extrusion'.",
+    "relevant_lesson_ids": [
+      "1040"
+    ],
+    "quote_chunk_ids": [
+      "1040:recommendation:0"
+    ],
+    "lexical_overlap": 0.07,
+    "document_title": "Dimensional stability of dissimilar materials in operational and non-operational environments where excessive or unintentional heating may occur",
+    "nasa_center": "WSTF",
+    "url": "https://llis.nasa.gov/lesson/1040",
+    "date": "2001-08-21",
+    "year": 2001
+  },
+  {
+    "id": 7,
+    "lesson_id": "1196",
+    "question": "If we have to deviate from testing the vehicle exactly as it will operate in flight, how should that deviation be handled?",
+    "ground_truth_answer": "Assess it carefully, use alternate measures such as independent validation, put it in the risk management plan, get senior management concurrence and report it at reviews.",
+    "context_quote": "Departures from this principle must be reflected in the project risk management plan, communicated to senior management for concurrence, and reported at reviews.",
+    "section": "Recommendation",
+    "category": "Test & Verification Practice",
+    "review_notes": "Avoids the literal phrase 'test as you fly'.",
+    "relevant_lesson_ids": [
+      "1196"
+    ],
+    "quote_chunk_ids": [
+      "1196:recommendation:0"
+    ],
+    "lexical_overlap": 0.0,
+    "document_title": "Test as You Fly, Fly as You Test, and Demonstrate Margin (1998)",
+    "nasa_center": "JPL",
+    "url": "https://llis.nasa.gov/lesson/1196",
+    "date": "2002-01-24",
+    "year": 2002
+  },
+  {
+    "id": 8,
+    "lesson_id": "771",
+    "question": "On which JPL flight projects was stress-testing electronics beyond flight limits used instead of analysis?",
+    "ground_truth_answer": "Magellan, NASA Scatterometer, Microwave Limb Sounder, Galileo and Cassini.",
+    "context_quote": "This practice has been used on Magellan, NASA scatterometer, Microwave Limb Sounder, Galileo, Cassini",
+    "section": "Evidence",
+    "category": "Program Heritage",
+    "review_notes": "Evidence section lists missions; question names none of them.",
+    "relevant_lesson_ids": [
+      "771"
+    ],
+    "quote_chunk_ids": [
+      "771:evidence:0"
+    ],
+    "lexical_overlap": 0.09,
+    "document_title": "Voltage & Temperature Margin Testing",
+    "nasa_center": "JPL",
+    "url": "https://llis.nasa.gov/lesson/771",
+    "date": "1999-02-01",
+    "year": 1999
+  },
+  {
+    "id": 9,
+    "lesson_id": "823",
+    "question": "Why shake a payload at low levels and measure its response if we already have a finite element model?",
+    "ground_truth_answer": "Modal testing verifies the analytical models (FEMs); without it model errors and uncertainty can lead to structural failure.",
+    "context_quote": "Modal testing is used to verify analytical models or FEMs of a structure or payload.",
+    "section": "Lesson Learned",
+    "category": "Test & Verification Practice",
+    "review_notes": "'shake ... measure response' paraphrases 'modal testing'.",
+    "relevant_lesson_ids": [
+      "823"
+    ],
+    "quote_chunk_ids": [
+      "823:lesson_learned:0"
+    ],
+    "lexical_overlap": 0.1,
+    "document_title": "Modal Testing: Measuring Dynamic Structural Characteristics",
+    "nasa_center": "JSC",
+    "url": "https://llis.nasa.gov/lesson/823",
+    "date": "1999-02-01",
+    "year": 1999
+  },
+  {
+    "id": 10,
+    "lesson_id": "806",
+    "question": "What are the goals of running a heavily sensored hydrogen-oxygen engine as a technology testbed?",
+    "ground_truth_answer": "Evaluate new propulsion technologies, validate or modify analytical models, understand engine operation under varying conditions and ensure reliability and operability.",
+    "context_quote": "(2) validate or modify analytical models;",
+    "section": "Recommendation",
+    "category": "Test & Verification Practice",
+    "review_notes": "MSFC SSME Technology Test Bed practice (1999).",
+    "relevant_lesson_ids": [
+      "806"
+    ],
+    "quote_chunk_ids": [
+      "806:recommendation:0"
+    ],
+    "lexical_overlap": 0.0,
+    "document_title": "Rocket Engine Technology Test Bed Practice",
+    "nasa_center": "MSFC",
+    "url": "https://llis.nasa.gov/lesson/806",
+    "date": "1999-02-01",
+    "year": 1999
+  },
+  {
+    "id": 11,
+    "lesson_id": "1529",
+    "question": "What analysis should be done on ground support gear so automated test software can't overdrive flight hardware?",
+    "ground_truth_answer": "Perform an FMEA on the GSE test equipment to find failure modes that could make the test software command an overtest.",
+    "context_quote": "perform a Failure Mode and Effects Analysis (FMEA) on GSE test equipment to identify failure modes that could cause test monitoring and control software to initiate an overtest.",
+    "section": "Recommendation",
+    "category": "Test & Verification Practice",
+    "review_notes": "MRO multipaction test incident (2003).",
+    "relevant_lesson_ids": [
+      "1529"
+    ],
+    "quote_chunk_ids": [
+      "1529:recommendation:0"
+    ],
+    "lexical_overlap": 0.27,
+    "document_title": "Ensure Test Monitoring Software Imposes Limits to Prevent Overtest (2003)",
+    "nasa_center": "JPL",
+    "url": "https://llis.nasa.gov/lesson/1529",
+    "date": "2004-10-11",
+    "year": 2004
+  },
+  {
+    "id": 12,
+    "lesson_id": "584",
+    "question": "A Mars orbiter accidentally repeated a drag-pass trim burn; what configuration-control lesson came out of it?",
+    "ground_truth_answer": "Spacecraft and sequence teams must be notified of ground software changes, and uplink sequences must be consistent with onboard memory partitions.",
+    "context_quote": "In particular, uplink sequences must be consistent with memory partitions onboard the spacecraft.",
+    "section": "Lesson Learned",
+    "category": "Operations",
+    "review_notes": "MGS aerobraking anomaly; 'aerobraking maneuver' paraphrased.",
+    "relevant_lesson_ids": [
+      "584"
+    ],
+    "quote_chunk_ids": [
+      "584:abstract:0",
+      "584:lesson_learned:0"
+    ],
+    "lexical_overlap": 0.0,
+    "document_title": "Mars Global Surveyor (MGS) Aerobraking Extra Burn Anomaly (1997)",
+    "nasa_center": "JPL",
+    "url": "https://llis.nasa.gov/lesson/584",
+    "date": "1998-03-04",
+    "year": 1998
+  },
+  {
+    "id": 13,
+    "lesson_id": "1521",
+    "question": "Which JPL procedure document governs how command loads are radiated to spacecraft?",
+    "ground_truth_answer": "Operation of Uplink Process, Rev. 2, JPL Doc ID 27232 (July 19, 2002).",
+    "context_quote": "Operation of Uplink Process, Rev. 2, JPL Doc ID 27232, July 19, 2002.",
+    "section": "References",
+    "category": "Standards & References",
+    "review_notes": "References section.",
+    "relevant_lesson_ids": [
+      "1521"
+    ],
+    "quote_chunk_ids": [
+      "1521:references:0"
+    ],
+    "lexical_overlap": 0.12,
+    "document_title": "Uplink Command Errors (A Cornerstone Lesson), 2002",
+    "nasa_center": "JPL",
+    "url": "https://llis.nasa.gov/lesson/1521",
+    "date": "2005-03-03",
+    "year": 2005
+  },
+  {
+    "id": 14,
+    "lesson_id": "1531",
+    "question": "Right after launch the ground station reports a weaker downlink than predicted; should we treat it as a real degradation?",
+    "ground_truth_answer": "Not necessarily: uplink feedthrough and saturation cause apparent degradation, and reported levels approach predictions as the spacecraft moves away.",
+    "context_quote": "As the spacecraft moves farther from Earth, the reported signal levels tend to move closer to predicted values.",
+    "section": "Lesson Learned",
+    "category": "Operations",
+    "review_notes": "No 'feedthrough' or 'saturation' in the question.",
+    "relevant_lesson_ids": [
+      "1531"
+    ],
+    "quote_chunk_ids": [
+      "1531:lesson_learned:0"
+    ],
+    "lexical_overlap": 0.09,
+    "document_title": "Indication of Post-Launch Degradation of the Downlink Signal due to Feedthrough (2003)",
+    "nasa_center": "JPL",
+    "url": "https://llis.nasa.gov/lesson/1531",
+    "date": "2005-04-18",
+    "year": 2005
+  },
+  {
+    "id": 15,
+    "lesson_id": "1480",
+    "question": "Why keep landing-sequence settings changeable until a few hours before arrival at a planet?",
+    "ground_truth_answer": "Being able to alter critical flight-software parameters within hours of critical events in response to unexpected data can save the mission.",
+    "context_quote": "Critical parameters coded in flight software and the ability to alter them within hours of critical events in response to unexpected data on flight characteristics can save a planetary mission or deep space encounter.",
+    "section": "Lesson Learned",
+    "category": "Operations",
+    "review_notes": "MER EDL parameter update lesson; 'EDL' not used.",
+    "relevant_lesson_ids": [
+      "1480"
+    ],
+    "quote_chunk_ids": [
+      "1480:lesson_learned:0"
+    ],
+    "lexical_overlap": 0.1,
+    "document_title": "Provide In-flight Capability to Modify Mission Plans During All Operations (2004)",
+    "nasa_center": "JPL",
+    "url": "https://llis.nasa.gov/lesson/1480",
+    "date": "2004-06-20",
+    "year": 2004
+  },
+  {
+    "id": 16,
+    "lesson_id": "2196",
+    "question": "Do toxic storable-propellant mishaps tend to happen while the system sits idle or while people are working on it?",
+    "ground_truth_answer": "Most incidents happen during some sort of dynamic operation; the propellants are stable in a static configuration.",
+    "context_quote": "One can deduce, however, that most incidents happen during some sort of dynamic operation.",
+    "section": "Recommendation",
+    "category": "Safety",
+    "review_notes": "Filtered query (center).",
+    "filter": {
+      "org_code": "KSC"
+    },
+    "relevant_lesson_ids": [
+      "2196"
+    ],
+    "quote_chunk_ids": [
+      "2196:recommendation:0"
+    ],
+    "lexical_overlap": 0.08,
+    "document_title": "Hypergolic Propellant Related Spills and Fires",
+    "nasa_center": "KSC",
+    "url": "https://llis.nasa.gov/lesson/2196",
+    "date": "2009-06-01",
+    "year": 2009
+  },
+  {
+    "id": 17,
+    "lesson_id": "2056",
+    "question": "A contractor fell off a building during panel replacement; what was wrong with how the job was classified?",
+    "ground_truth_answer": "It was treated as low-slope roofing but should have been classified as steel erection, which requires physical fall restraints.",
+    "context_quote": "The roofing work should have been classified as a steel erection, for which the Occupational Health and Safety Administration (OSHA) required physical restraints.",
+    "section": "Lesson Learned",
+    "category": "Safety",
+    "review_notes": "KSC Building M6-794 mishap; no OSHA wording in the question.",
+    "relevant_lesson_ids": [
+      "2056"
+    ],
+    "quote_chunk_ids": [
+      "2056:lesson_learned:0"
+    ],
+    "lexical_overlap": 0.12,
+    "document_title": "Building M6-794 Roofing Type A Mishap",
+    "nasa_center": "KSC",
+    "url": "https://llis.nasa.gov/lesson/2056",
+    "date": "2009-07-21",
+    "year": 2009
+  },
+  {
+    "id": 18,
+    "lesson_id": "557",
+    "question": "At what point should the batteries in an uninterruptible supply be replaced?",
+    "ground_truth_answer": "When about 50% capability is reached (low level indicator).",
+    "context_quote": "suggested guideline is when 50% capability is reached",
+    "section": "Recommendation",
+    "category": "Quantitative Engineering Values",
+    "review_notes": "Filtered query (center).",
+    "filter": {
+      "org_code": "JSC"
+    },
+    "relevant_lesson_ids": [
+      "557"
+    ],
+    "quote_chunk_ids": [
+      "557:recommendation:0"
+    ],
+    "lexical_overlap": 0.0,
+    "document_title": "Test Requirements for Online Maintenance-Free Batteries (including Uninterruptible Power Supplies)",
+    "nasa_center": "JSC",
+    "url": "https://llis.nasa.gov/lesson/557",
+    "date": "1997-07-21",
+    "year": 1997
+  },
+  {
+    "id": 19,
+    "lesson_id": "406",
+    "question": "What automatic protection was added to the hydrogen exhaust piping on the engine test stand to catch air leaking in?",
+    "ground_truth_answer": "An O2 meter that, at about 0.5% oxygen, sounds an audible alarm and starts an automatic gaseous nitrogen purge.",
+    "context_quote": "the meter both produces an audible alarm and an automatic gasseous nitrogen purge is initiated.",
+    "section": "Evidence",
+    "category": "Corrective Action Evidence",
+    "review_notes": "Filtered query (center). Stennis B-1 vent line rupture (1996).",
+    "filter": {
+      "org_code": "SSC"
+    },
+    "relevant_lesson_ids": [
+      "406"
+    ],
+    "quote_chunk_ids": [
+      "406:evidence:0"
+    ],
+    "lexical_overlap": 0.08,
+    "document_title": "On Feb. 8, 1996 at 10:04 AM on the B-1 Test Stand, a vent line overpressurization and subsequent…",
+    "nasa_center": "SSC",
+    "url": "https://llis.nasa.gov/lesson/406",
+    "date": "1996-06-18",
+    "year": 1996
+  },
+  {
+    "id": 20,
+    "lesson_id": "1338",
+    "question": "After a worker was pinned by rolling support equipment on an elevated deck, what rule was added about moving equipment?",
+    "ground_truth_answer": "Always verify equipment movement visually and remove visual obstructions before moving mobile equipment.",
+    "context_quote": "Always verify movement of equipment visually.",
+    "section": "Recommendation",
+    "category": "Safety",
+    "review_notes": "Stennis A1 test stand near-miss (2002).",
+    "relevant_lesson_ids": [
+      "1338"
+    ],
+    "quote_chunk_ids": [
+      "1338:recommendation:0"
+    ],
+    "lexical_overlap": 0.1,
+    "document_title": "Stennis Space Center Near-Miss/Ground Support Equipment",
+    "nasa_center": "SSC",
+    "url": "https://llis.nasa.gov/lesson/1338",
+    "date": "2002-04-15",
+    "year": 2002
+  },
+  {
+    "id": 21,
+    "lesson_id": "1622",
+    "question": "Which Dryden procedure chapter applies to the incident where a pressurized nitrogen servicing line struck an aircraft?",
+    "ground_truth_answer": "DCP-S-009, Chapter 8.",
+    "context_quote": "DCP - S - 009, Chapter 8",
+    "section": "References",
+    "category": "Standards & References",
+    "review_notes": "References section; 'hose', 'GN2' paraphrased.",
+    "relevant_lesson_ids": [
+      "1622"
+    ],
+    "quote_chunk_ids": [
+      "1622:references:0"
+    ],
+    "lexical_overlap": 0.09,
+    "document_title": "Aircraft Impacted By an Unsecured/Pressurized GN2 Hose",
+    "nasa_center": "AFRC",
+    "url": "https://llis.nasa.gov/lesson/1622",
+    "date": "2005-06-05",
+    "year": 2005
+  },
+  {
+    "id": 22,
+    "lesson_id": "1095",
+    "question": "What should submittal reviewers check so that ordered building HVAC units actually match the available electrical supply?",
+    "ground_truth_answer": "Understand what every model code number and letter means and verify utility service connection requirements for major equipment.",
+    "context_quote": "Make sure that the reviewer understands what every one of those specific model code numbers and letters means.",
+    "section": "Recommendation",
+    "category": "Facilities",
+    "review_notes": "Filtered query (center). 480 V vs 208 V HVAC mismatch.",
+    "filter": {
+      "org_code": "AFRC"
+    },
+    "relevant_lesson_ids": [
+      "1095"
+    ],
+    "quote_chunk_ids": [
+      "1095:recommendation:0"
+    ],
+    "lexical_overlap": 0.0,
+    "document_title": "Construction Site Safety: Coordination of Requirements, Power Compatibility, Design Review, Submittal Review",
+    "nasa_center": "AFRC",
+    "url": "https://llis.nasa.gov/lesson/1095",
+    "date": "2001-08-27",
+    "year": 2001
+  },
+  {
+    "id": 23,
+    "lesson_id": "746",
+    "question": "During office renovation projects, who should handle relocating the occupants so the project manager isn't overloaded?",
+    "ground_truth_answer": "A dedicated Move Coordinator role within the project team.",
+    "context_quote": "Create the role of a Move Coordinator within the Project Team.",
+    "section": "Recommendation",
+    "category": "Facilities",
+    "review_notes": "Filtered query (center).",
+    "filter": {
+      "org_code": "GRC"
+    },
+    "relevant_lesson_ids": [
+      "746"
+    ],
+    "quote_chunk_ids": [
+      "746:recommendation:0"
+    ],
+    "lexical_overlap": 0.1,
+    "document_title": "Facilities, Mod & Rehab Projects",
+    "nasa_center": "GRC",
+    "url": "https://llis.nasa.gov/lesson/746",
+    "date": "2000-01-01",
+    "year": 2000
+  },
+  {
+    "id": 24,
+    "lesson_id": "463",
+    "question": "How did rework on a booster engine regulator end up putting a satellite into the wrong orbit?",
+    "ground_truth_answer": "A reworked set screw rotated and decayed regulator output because rework instructions lacked torquing and QA verification requirements.",
+    "context_quote": "Reworked screws can be the cause of decayed precision regulator output if rework instructions lack requirements for set screw torquing and verification by a quality inspector.",
+    "section": "Lesson Learned",
+    "category": "Root Cause Analysis",
+    "review_notes": "Atlas/Centaur AC-74 (1993).",
+    "relevant_lesson_ids": [
+      "463"
+    ],
+    "quote_chunk_ids": [
+      "463:lesson_learned:0"
+    ],
+    "lexical_overlap": 0.25,
+    "document_title": "Atlas Booster Engine Precision Regulator - Atlas/Centaur Program",
+    "nasa_center": "GRC",
+    "url": "https://llis.nasa.gov/lesson/463",
+    "date": "1994-07-25",
+    "year": 1994
+  },
+  {
+    "id": 25,
+    "lesson_id": "733",
+    "question": "At Goddard, where do anomalies seen in orbit get written up, as opposed to failures during ground testing?",
+    "ground_truth_answer": "In a separate Spacecraft Orbital Anomaly Report (SOAR) system.",
+    "context_quote": "A separate system, the \"Spacecraft Orbital Anomaly Report (SOAR)\", is used for the reporting, evaluation and correction of problems occurring on-orbit",
+    "section": "Recommendation",
+    "category": "Quality Assurance",
+    "review_notes": "Filtered query (center).",
+    "filter": {
+      "org_code": "GSFC"
+    },
+    "relevant_lesson_ids": [
+      "733"
+    ],
+    "quote_chunk_ids": [
+      "733:recommendation:0"
+    ],
+    "lexical_overlap": 0.11,
+    "document_title": "Pre-Flight Problem/Failure Reporting Procedures",
+    "nasa_center": "GSFC",
+    "url": "https://llis.nasa.gov/lesson/733",
+    "date": "1999-02-01",
+    "year": 1999
+  },
+  {
+    "id": 26,
+    "lesson_id": "801",
+    "question": "On which propulsion programs has 3D X-ray CT imaging been used to inspect hardware?",
+    "ground_truth_answer": "Solid Rocket Motor, SSME, Solid Propulsion Integrity Program, Modified NASA Motor Program and a sub-scale solid rocket combustion simulator.",
+    "context_quote": "This practice has been used on Solid Rocket Motor (SRM), Space Shuttle Main Engine (SSME), Solid Propulsion Integrity Program (SPIP), Modified NASA Motor Program, Sub-Scale Solid Rocket Combustion Simulator",
+    "section": "Evidence",
+    "category": "Program Heritage",
+    "review_notes": "Filtered query (center). Evidence section.",
+    "filter": {
+      "org_code": "MSFC"
+    },
+    "relevant_lesson_ids": [
+      "801"
+    ],
+    "quote_chunk_ids": [
+      "801:evidence:0"
+    ],
+    "lexical_overlap": 0.29,
+    "document_title": "Advanced Computed X-Ray Tomography",
+    "nasa_center": "MSFC",
+    "url": "https://llis.nasa.gov/lesson/801",
+    "date": "1999-01-31",
+    "year": 1999
+  },
+  {
+    "id": 27,
+    "lesson_id": "1111",
+    "question": "Without taking a mechanism apart, how can you tell whether its explosive actuator actually fired?",
+    "ground_truth_answer": "Measure the firing circuit resistance before and after firing.",
+    "context_quote": "Currently, the only test being performed to verify that the initiator fired, without disassembly of the pyrotechnic mechanism, is to measure firing circuit resistance before and after firing.",
+    "section": "Evidence",
+    "category": "Test & Verification Practice",
+    "review_notes": "ASAP ISS EVA lesson; NASA response in Evidence.",
+    "relevant_lesson_ids": [
+      "1111"
+    ],
+    "quote_chunk_ids": [
+      "1111:evidence:0"
+    ],
+    "lexical_overlap": 0.25,
+    "document_title": "International Space Station Program/Extravehicular Activity (EVA)/Pyrotechnic Initiators",
+    "nasa_center": "HQ",
+    "url": "https://llis.nasa.gov/lesson/1111",
+    "date": "1999-02-01",
+    "year": 1999
+  },
+  {
+    "id": 28,
+    "lesson_id": "921",
+    "question": "When a contractor writes mission-critical flight code, which three areas must the center's acquisition plan cover?",
+    "ground_truth_answer": "Software requirements, software management planning and acceptance testing.",
+    "context_quote": "These plans must provide for Software Requirements, Software Management Planning, and Acceptance Testing.",
+    "section": "Recommendation",
+    "category": "Software Management",
+    "review_notes": "MCO-era software acquisition lesson.",
+    "relevant_lesson_ids": [
+      "921"
+    ],
+    "quote_chunk_ids": [
+      "921:recommendation:0"
+    ],
+    "lexical_overlap": 0.08,
+    "document_title": "Acquisition and Oversight of Contracted Software Development (1999)",
+    "nasa_center": "JPL",
+    "url": "https://llis.nasa.gov/lesson/921",
+    "date": "2000-10-05",
+    "year": 2000
+  },
+  {
+    "id": 29,
+    "lesson_id": "1405",
+    "question": "Why bring engineers from outside a project to attack a stubborn technical problem?",
+    "ground_truth_answer": "A 'fresh look' from outside experts uncovers issues the original engineering team missed.",
+    "context_quote": "This “fresh look” approach is valuable in uncovering issues not found by the original engineering team.",
+    "section": "Lesson Learned",
+    "category": "Organization",
+    "review_notes": "NESC tiger-team lesson; 'tiger team' and 'One NASA' avoided.",
+    "relevant_lesson_ids": [
+      "1405"
+    ],
+    "quote_chunk_ids": [
+      "1405:lesson_learned:0"
+    ],
+    "lexical_overlap": 0.0,
+    "document_title": "Benefits of a One NASA Organization in Solving Program and Project Technical Issues",
+    "nasa_center": "NESC",
+    "url": "https://llis.nasa.gov/lesson/1405",
+    "date": "2004-05-06",
+    "year": 2004
+  },
+  {
+    "id": 30,
+    "lesson_id": "1063",
+    "question": "How did the Station program respond to the safety panel's concern that the alarm system lacked systems engineering?",
+    "ground_truth_answer": "It created a C&W Systems Integration Team (CWSIT) to manage all caution and warning development.",
+    "context_quote": "The ISS Program concurs with these concerns and has instituted a C&W Systems Integration Team (CWSIT) to provide direction and management of all C&W development activities",
+    "section": "Evidence",
+    "category": "Corrective Action Evidence",
+    "review_notes": "ASAP 1998; answer in NASA response (Evidence).",
+    "relevant_lesson_ids": [
+      "1063"
+    ],
+    "quote_chunk_ids": [
+      "1063:evidence:0"
+    ],
+    "lexical_overlap": 0.18,
+    "document_title": "International Space Station (ISS) Program/Caution and Warning (C&W)/Systems Engineering",
+    "nasa_center": "HQ",
+    "url": "https://llis.nasa.gov/lesson/1063",
+    "date": "1998-02-01",
+    "year": 1998
+  },
+  {
+    "id": 31,
+    "lesson_id": "1113",
+    "question": "How many spacesuit backpack life support units did NASA plan to hold after buying the extra one recommended by the safety panel?",
+    "ground_truth_answer": "16 LSS units.",
+    "context_quote": "NASA also plans to go forward with the recommendation to procure an additional LSS to achieve 16 LSS's.",
+    "section": "Evidence",
+    "category": "Quantitative Engineering Values",
+    "review_notes": "Number inside a long Evidence section.",
+    "relevant_lesson_ids": [
+      "1113"
+    ],
+    "quote_chunk_ids": [
+      "1113:evidence:0"
+    ],
+    "lexical_overlap": 0.07,
+    "document_title": "International Space Station (ISS) Program/Extravehicular Activity (EVA)/Simplified Aid for EVA Rescue (SAFER)",
+    "nasa_center": "HQ",
+    "url": "https://llis.nasa.gov/lesson/1113",
+    "date": "1999-02-01",
+    "year": 1999
+  },
+  {
+    "id": 32,
+    "lesson_id": "1047",
+    "question": "How many government-required quality checkpoints in orbiter processing were expected to remain after the reduction effort?",
+    "ground_truth_answer": "About 6,000 of the original 22,000 GMIPs.",
+    "context_quote": "It is estimated that approximately 6,000 of the original 22,000 GMIPs will remain in place at the end of this effort.",
+    "section": "Evidence",
+    "category": "Quantitative Engineering Values",
+    "review_notes": "'GMIP' not used in the question.",
+    "relevant_lesson_ids": [
+      "1047"
+    ],
+    "quote_chunk_ids": [
+      "1047:evidence:0",
+      "1047:evidence:1"
+    ],
+    "lexical_overlap": 0.2,
+    "document_title": "Space Shuttle Program/Operations-Processing/Workforce",
+    "nasa_center": "HQ",
+    "url": "https://llis.nasa.gov/lesson/1047",
+    "date": "1998-02-01",
+    "year": 1998
+  },
+  {
+    "id": 33,
+    "lesson_id": "1137",
+    "question": "What software tool was built to let shuttle engineers edit work paperwork more quickly?",
+    "ground_truth_answer": "WAVE (work authorization document authoring and validation environment).",
+    "context_quote": "development of the new work authorization document authoring and validation environment (WAVE) computer software to allow engineers to quickly and easily modify work instructions",
+    "section": "Evidence",
+    "category": "Corrective Action Evidence",
+    "review_notes": "Evidence section.",
+    "relevant_lesson_ids": [
+      "1137"
+    ],
+    "quote_chunk_ids": [
+      "1137:evidence:0"
+    ],
+    "lexical_overlap": 0.4,
+    "document_title": "Space Shuttle Program/Work Documentation/Unincorporated Changes",
+    "nasa_center": "HQ",
+    "url": "https://llis.nasa.gov/lesson/1137",
+    "date": "2000-02-01",
+    "year": 2000
+  },
+  {
+    "id": 34,
+    "lesson_id": "1792",
+    "question": "Which Ames procedural document governs how new-business proposals are authorized and reviewed?",
+    "ground_truth_answer": "APR 8000.1, Procedure for Proposal Authorization, Development, Review, Approval and Archiving.",
+    "context_quote": "Procedure for Proposal Authorization, Development, Review, Approval and Archiving, APR 8000.1",
+    "section": "References",
+    "category": "Standards & References",
+    "review_notes": "Filtered query (center). References section.",
+    "filter": {
+      "org_code": "ARC"
+    },
+    "relevant_lesson_ids": [
+      "1792"
+    ],
+    "quote_chunk_ids": [
+      "1792:evidence:0",
+      "1792:references:0"
+    ],
+    "lexical_overlap": 0.0,
+    "document_title": "Writing winning proposals that compliment a Center's business strategy",
+    "nasa_center": "ARC",
+    "url": "https://llis.nasa.gov/lesson/1792",
+    "date": "2007-06-15",
+    "year": 2007
+  },
+  {
+    "id": 35,
+    "lesson_id": "1289",
+    "question": "For a small classified team where each specialist is irreplaceable, what should the staffing plan include?",
+    "ground_truth_answer": "Cross training, mentoring, a pre-identified pool of cleared specialists, risk-based schedules and an adequate overtime budget.",
+    "context_quote": "pre-identified pool of specialists with appropriate security backgrounds",
+    "section": "Recommendation",
+    "category": "Project Management",
+    "review_notes": "'one deep' wording avoided.",
+    "relevant_lesson_ids": [
+      "1289"
+    ],
+    "quote_chunk_ids": [
+      "1289:recommendation:0"
+    ],
+    "lexical_overlap": 0.0,
+    "document_title": "Managing Human Resources in Projects Where Each Individual is Multi-tasked, Frequently Required to Work Overtime, is One-deep in Skills and Specialization, and is Required to Have a Security Clearance",
+    "nasa_center": "ARC",
+    "url": "https://llis.nasa.gov/lesson/1289",
+    "date": "2002-01-01",
+    "year": 2002
+  },
+  {
+    "id": 36,
+    "lesson_id": "1476",
+    "question": "Why did the Columbia board's web evidence database end up barely used by investigators?",
+    "ground_truth_answer": "Investigators lacked time to browse links on a PC and the tool could not produce logic tree reports.",
+    "context_quote": "A combination of factors, including lack of time by investigators to search through the IO links on a personal computer and IO's lack of logic tree report capability, severely limited use of the system by other than personnel keying in IO data.",
+    "section": "Lesson Learned",
+    "category": "Accident Investigation",
+    "review_notes": "'Investigation Organizer' not named.",
+    "relevant_lesson_ids": [
+      "1476"
+    ],
+    "quote_chunk_ids": [
+      "1476:lesson_learned:0"
+    ],
+    "lexical_overlap": 0.12,
+    "document_title": "Accident Investigations/Investigation Organizer (IO)/IO Standard and Ad Hoc Report Capability",
+    "nasa_center": "JSC",
+    "url": "https://llis.nasa.gov/lesson/1476",
+    "date": "2003-08-31",
+    "year": 2003
+  },
+  {
+    "id": 37,
+    "lesson_id": "1213",
+    "question": "A late tweak to an EVA hardware cover confused the spacewalkers because the checklist wasn't updated; what is the process takeaway?",
+    "ground_truth_answer": "Configuration control must cover all levels of authorized change and feed back to affected elements, including training and operations.",
+    "context_quote": "Configuration control processes must account for all levels of authorized changes and provide feedback to affected program elements including training and operations.",
+    "section": "Lesson Learned",
+    "category": "Configuration Management",
+    "review_notes": "STS-88 trunnion covers.",
+    "relevant_lesson_ids": [
+      "1213"
+    ],
+    "quote_chunk_ids": [
+      "1213:lesson_learned:0"
+    ],
+    "lexical_overlap": 0.0,
+    "document_title": "Configuration Control at All Levels of Change",
+    "nasa_center": "JSC",
+    "url": "https://llis.nasa.gov/lesson/1213",
+    "date": "1999-06-07",
+    "year": 1999
+  },
+  {
+    "id": 38,
+    "lesson_id": "1479",
+    "question": "Which NASA policy on limiting space junk did the end-of-life experience of the small nitric-oxide satellite suggest clarifying?",
+    "ground_truth_answer": "NPD 8710.3A, NASA Policy for Limiting Orbital Debris Generation.",
+    "context_quote": "NPD 8710.3A, NASA Policy for Limiting Orbital Debris Generation",
+    "section": "References",
+    "category": "Standards & References",
+    "review_notes": "SNOE reentry; References section.",
+    "relevant_lesson_ids": [
+      "1479"
+    ],
+    "quote_chunk_ids": [
+      "1479:references:0"
+    ],
+    "lexical_overlap": 0.23,
+    "document_title": "Lessons Learned from SNOE Reentry",
+    "nasa_center": "GSFC",
+    "url": "https://llis.nasa.gov/lesson/1479",
+    "date": "2004-04-02",
+    "year": 2004
+  },
+  {
+    "id": 39,
+    "lesson_id": "1490",
+    "question": "Which ASTM method for counting airborne particles was cited for cleanroom work with foreign partners on the ozone instrument?",
+    "ground_truth_answer": "ASTM-F25, Standard Test Method for Sizing and Counting Airborne Particulate Contamination in Clean Rooms.",
+    "context_quote": "ASTM-F25 Standard Test Method for Sizing and Counting Airborne Particulate Contamination in Clean Rooms and Other Dust-Controlled Areas",
+    "section": "References",
+    "category": "Standards & References",
+    "review_notes": "SAGE III; References section.",
+    "relevant_lesson_ids": [
+      "1490"
+    ],
+    "quote_chunk_ids": [
+      "1490:references:0"
+    ],
+    "lexical_overlap": 0.33,
+    "document_title": "SAGE III/Contamination Control/Test Facilities",
+    "nasa_center": "LARC",
+    "url": "https://llis.nasa.gov/lesson/1490",
+    "date": "2003-07-01",
+    "year": 2003
+  },
+  {
+    "id": 40,
+    "lesson_id": "2216",
+    "question": "What should institutions do so routine building services don't interfere with a project's lockdown during critical operations?",
+    "ground_truth_answer": "Set up institutional procedures coordinating nonessential infrastructure services with configuration control freezes requested by flight projects.",
+    "context_quote": "Establish and implement institutional procedures for coordination of nonessential infrastructure services with scheduled configuration control freezes that have been instituted at the request of flight projects during critical mission operations.",
+    "section": "Recommendation",
+    "category": "Operations",
+    "review_notes": "Filtered query (program).",
+    "filter": {
+      "program": "Mars Phoenix"
+    },
+    "relevant_lesson_ids": [
+      "2216"
+    ],
+    "quote_chunk_ids": [
+      "2216:recommendation:0"
+    ],
+    "lexical_overlap": 0.3,
+    "document_title": "Ban Nonessential Infrastructure Support Services That Could Disrupt Critical Mission Operations",
+    "nasa_center": "JPL",
+    "url": "https://llis.nasa.gov/lesson/2216",
+    "date": "2009-08-18",
+    "year": 2009
+  },
+  {
+    "id": 41,
+    "lesson_id": "1996",
+    "question": "Even with guide rails, how should handlers steer a wheeled fixture carrying flight hardware?",
+    "ground_truth_answer": "Always attach a steering stick or T-bar to the casters or wheels.",
+    "context_quote": "Even when rails or tracks are used to constrain motion, always attach a steering stick or T-bar to the casters or wheels to guide the movement of valuable equipment.",
+    "section": "Recommendation",
+    "category": "Ground Handling",
+    "review_notes": "Filtered query (program). Heatshield handling incident.",
+    "filter": {
+      "program": "Mars Science Laboratory"
+    },
+    "relevant_lesson_ids": [
+      "1996"
+    ],
+    "quote_chunk_ids": [
+      "1996:recommendation:0"
+    ],
+    "lexical_overlap": 0.22,
+    "document_title": "MSL Heatshield Handling Incident",
+    "nasa_center": "JPL",
+    "url": "https://llis.nasa.gov/lesson/1996",
+    "date": "2008-12-08",
+    "year": 2008
+  },
+  {
+    "id": 42,
+    "lesson_id": "1864",
+    "question": "How do you keep a tube amplifier's power supply noise off the spacecraft bus?",
+    "ground_truth_answer": "Add an external filter between the TWTA and the spacecraft bus.",
+    "context_quote": "Missions using TWTAs and needing low levels of EMI should incorporate an external filterbetween the TWTA and the spacecraft bus.",
+    "section": "Recommendation",
+    "category": "Design Practice",
+    "review_notes": "Filtered query (program). Note: other lessons on the same TWTA use different program spellings.",
+    "filter": {
+      "program": "Lunar Reconnaissance Orbiter"
+    },
+    "relevant_lesson_ids": [
+      "1864"
+    ],
+    "quote_chunk_ids": [
+      "1864:recommendation:0"
+    ],
+    "lexical_overlap": 0.25,
+    "document_title": "External filter needed to achieve low EMI from TWTA",
+    "nasa_center": "GRC",
+    "url": "https://llis.nasa.gov/lesson/1864",
+    "date": "2008-07-08",
+    "year": 2008
+  },
+  {
+    "id": 43,
+    "lesson_id": "1781",
+    "question": "How do you make sure testbed backups can actually be restored?",
+    "ground_truth_answer": "Have a system administrator familiar with both the script and the backup hardware verify the backups' actual performance.",
+    "context_quote": "Assure that the actual performance of critical backups is verified by a computer system administrator familiar with both the script and the backup hardware.",
+    "section": "Recommendation",
+    "category": "Operations",
+    "review_notes": "Filtered query (program).",
+    "filter": {
+      "program": "Cassini"
+    },
+    "relevant_lesson_ids": [
+      "1781"
+    ],
+    "quote_chunk_ids": [
+      "1781:recommendation:0"
+    ],
+    "lexical_overlap": 0.25,
+    "document_title": "Verify the Proper Performance of Critical Backups",
+    "nasa_center": "JPL",
+    "url": "https://llis.nasa.gov/lesson/1781",
+    "date": "2007-04-03",
+    "year": 2007
+  },
+  {
+    "id": 44,
+    "lesson_id": "1725",
+    "question": "What should test plans assume when firing cable cutters near sensitive flight hardware?",
+    "ground_truth_answer": "Assume hazardous blow-by will occur: protect sensitive areas from venting and contamination, use barriers, fire remotely.",
+    "context_quote": "Always consider pyro venting a possibility and protect sensitive areas of the flight hardware against contamination.",
+    "section": "Recommendation",
+    "category": "Safety",
+    "review_notes": "Filtered query (program).",
+    "filter": {
+      "program": "Mars Exploration Rover"
+    },
+    "relevant_lesson_ids": [
+      "1725"
+    ],
+    "quote_chunk_ids": [
+      "1725:recommendation:0"
+    ],
+    "lexical_overlap": 0.3,
+    "document_title": "Control Blow-By From Pyrotechnic Devices (2006)",
+    "nasa_center": "JPL",
+    "url": "https://llis.nasa.gov/lesson/1725",
+    "date": "2006-04-13",
+    "year": 2006
+  },
+  {
+    "id": 45,
+    "lesson_id": "2037",
+    "question": "How did expensive station spare circuit boards end up being sold as scrap?",
+    "ground_truth_answer": "Usage rate was the only criterion for excessing; the holding fixtures had no usage history, so the attached flight boards went with them.",
+    "context_quote": "The sole decision criterion for excessing items was usage rate.",
+    "section": "Lesson Learned",
+    "category": "Logistics",
+    "review_notes": "Filtered query (program).",
+    "filter": {
+      "program": "ISS program"
+    },
+    "relevant_lesson_ids": [
+      "2037"
+    ],
+    "quote_chunk_ids": [
+      "2037:abstract:0",
+      "2037:lesson_learned:0"
+    ],
+    "lexical_overlap": 0.0,
+    "document_title": "Inadvertently Excessed Pulse Width Modulator Circuit Card Assemblies (PWM CCA)",
+    "nasa_center": "KSC",
+    "url": "https://llis.nasa.gov/lesson/2037",
+    "date": "2009-03-24",
+    "year": 2009
+  },
+  {
+    "id": 46,
+    "lesson_id": "641",
+    "question": "What units mix-up caused the loss of the 1999 Mars weather orbiter?",
+    "ground_truth_answer": "Thruster small-forces data in a ground software file was in English units (pound-force seconds) instead of the required metric units.",
+    "context_quote": "the root cause for the loss of the MCO spacecraft was the failure to use metric units in the coding of a ground software file",
+    "section": "Lesson Learned",
+    "category": "Root Cause Analysis",
+    "review_notes": "Multi-lesson: MIB report and software development lesson.",
+    "relevant_lesson_ids": [
+      "641",
+      "740"
+    ],
+    "quote_chunk_ids": [
+      "641:lesson_learned:0"
+    ],
+    "lexical_overlap": 0.25,
+    "document_title": "Mars Climate Orbiter Mishap Investigation Board - Phase I Report",
+    "nasa_center": "HQ",
+    "url": "https://llis.nasa.gov/lesson/641",
+    "date": "1999-11-30",
+    "year": 1999
+  },
+  {
+    "id": 47,
+    "lesson_id": "938",
+    "question": "Why did the descent engines of the 1999 Mars south-pole lander probably shut off too early?",
+    "ground_truth_answer": "Spurious leg-deployment signals were taken as valid touchdown, shutting down the engines at about 40 m.",
+    "context_quote": "It is believed that these momentary signals were recorded as valid touchdown events, resulting in the engines shutting down at an altitude of 40 meters.",
+    "section": "Driving Event",
+    "category": "Root Cause Analysis",
+    "review_notes": "Multi-lesson: probable scenario lesson and test-as-you-fly lesson.",
+    "relevant_lesson_ids": [
+      "938",
+      "1196"
+    ],
+    "quote_chunk_ids": [
+      "938:driving_event:0",
+      "938:driving_event:3"
+    ],
+    "lexical_overlap": 0.09,
+    "document_title": "Probable Scenario for Mars Polar Lander Mission Loss (1998)",
+    "nasa_center": "JPL",
+    "url": "https://llis.nasa.gov/lesson/938",
+    "date": "2001-02-14",
+    "year": 2001
+  },
+  {
+    "id": 48,
+    "lesson_id": "331",
+    "question": "What did the Hubble mirror flaw teach about the expertise and independence of quality oversight staff?",
+    "ground_truth_answer": "QA needs technical expertise in specialised areas such as optics and must be independent of program and engineering management.",
+    "context_quote": "If quality assurance personnel responsible for oversight of the quality of highly technical state-of-the-art development do not have a degree of expertise in that technical area, the likelihood of discovering QA problems decreases significantly.",
+    "section": "Lesson Learned",
+    "category": "Quality Assurance",
+    "review_notes": "Multi-lesson: twin MSFC 1993 lessons (expertise / access).",
+    "relevant_lesson_ids": [
+      "331",
+      "332"
+    ],
+    "quote_chunk_ids": [
+      "331:lesson_learned:0"
+    ],
+    "lexical_overlap": 0.33,
+    "document_title": "Quality Assurance Expertise in Special Technical Areas (e.g. optics)",
+    "nasa_center": "MSFC",
+    "url": "https://llis.nasa.gov/lesson/331",
+    "date": "1993-08-16",
+    "year": 1993
+  },
+  {
+    "id": 49,
+    "lesson_id": "1196",
+    "question": "Why should ground tests reproduce the real mission profile and flight configuration?",
+    "ground_truth_answer": "End-to-end verification may be compromised when it is not consistent with the mission profile plus margin and off-design parameters.",
+    "context_quote": "The process of end-to-end system verification (either through testing, simulation, or analysis) may be compromised when it is not consistent with the mission profile (plus margin and the appropriate off-design parameters).",
+    "section": "Lesson Learned",
+    "category": "Test & Verification Practice",
+    "review_notes": "Multi-lesson: all 1990–2009 lessons that invoke the test-as-you-fly principle.",
+    "relevant_lesson_ids": [
+      "1196",
+      "1335",
+      "909",
+      "1733",
+      "1390",
+      "1713",
+      "1416",
+      "2044",
+      "2336",
+      "2116"
+    ],
+    "quote_chunk_ids": [
+      "1196:lesson_learned:0"
+    ],
+    "lexical_overlap": 0.25,
+    "document_title": "Test as You Fly, Fly as You Test, and Demonstrate Margin (1998)",
+    "nasa_center": "JPL",
+    "url": "https://llis.nasa.gov/lesson/1196",
+    "date": "2002-01-24",
+    "year": 2002
+  },
+  {
+    "id": 50,
+    "lesson_id": "987",
+    "question": "What do older program post-mortems say about letting the list of system requirements keep growing during development?",
+    "ground_truth_answer": "Keep requirements stable and do not allow requirements creep; involve all stakeholders when finalizing them.",
+    "context_quote": "Stable Requirements are key to program stability. Do not allow requirements to creep.",
+    "section": "Lesson Learned",
+    "category": "Project Management",
+    "review_notes": "Multi-lesson: Chandra, F-18 HARV, X-34 FASTRAC, OSP and other lessons on requirements creep.",
+    "relevant_lesson_ids": [
+      "987",
+      "1604",
+      "17802",
+      "1420",
+      "1522",
+      "1506",
+      "1956"
+    ],
+    "quote_chunk_ids": [
+      "987:lesson_learned:0"
+    ],
+    "lexical_overlap": 0.17,
+    "document_title": "Chandra X-ray Observatory (CXO) Development Program Programmatic \"Lessons Learned\"",
+    "nasa_center": "MSFC",
+    "url": "https://llis.nasa.gov/lesson/987",
+    "date": "2001-05-03",
+    "year": 2001
+  }
+]

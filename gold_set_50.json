@@ -199,7 +199,7 @@
     "lesson_id": "31002",
     "question": "Why did Nintex workflows stop running during the KSC SharePoint 2019 upgrade?",
     "ground_truth_answer": "The 30-day migration license expired before being updated to the production license.",
-    "context_quote": "A third party tool, Nintex Workflow used to automate business processes in SharePoint, only allowed for a 30 day migration license. All SharePoint sites were migrated in time. However, the migration license was not updated to the production license . When the migration license ran out, users were not able to use Nintex workflow or forms.",
+    "context_quote": "A third party tool, Nintex Workflow used to automate business processes in SharePoint, only allowed for a 30 day migration license. All SharePoint sites were migrated in time. However, the migration license was not updated to the production license. When the migration license ran out, users were not able to use Nintex workflow or forms.",
     "section": "Driving Event",
     "category": "Root Cause Analysis",
     "review_notes": "Lesson number removed; changed from repeating title to exact technical root cause.",

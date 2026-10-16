@@ -1,0 +1,178 @@
+{
+  "DENSE": {
+    "lesson_hit@1": 0.6,
+    "lesson_hit@5": 0.82,
+    "lesson_hit@10": 0.88,
+    "quote_hit@1": 0.22,
+    "quote_hit@5": 0.7,
+    "quote_hit@10": 0.76,
+    "mrr@10": 0.6844444444444444,
+    "missed_question_ids": [
+      8,
+      13,
+      36,
+      37,
+      47,
+      50
+    ],
+    "latency_ms": 44.11173343658447,
+    "groups": {
+      "filtered": {
+        "n": 14,
+        "lesson_hit@5": 0.9285714285714286,
+        "mrr@10": 0.8531746031746031
+      },
+      "multi_lesson": {
+        "n": 5,
+        "lesson_hit@5": 0.6,
+        "mrr@10": 0.4666666666666667
+      },
+      "section=Driving Event": {
+        "n": 1,
+        "lesson_hit@5": 0.0,
+        "mrr@10": 0.0
+      },
+      "section=Evidence": {
+        "n": 9,
+        "lesson_hit@5": 0.7777777777777778,
+        "mrr@10": 0.6049382716049383
+      },
+      "section=Lesson Learned": {
+        "n": 17,
+        "lesson_hit@5": 0.8235294117647058,
+        "mrr@10": 0.6666666666666667
+      },
+      "section=Recommendation": {
+        "n": 18,
+        "lesson_hit@5": 0.8888888888888888,
+        "mrr@10": 0.7469135802469136
+      },
+      "section=References": {
+        "n": 5,
+        "lesson_hit@5": 0.8,
+        "mrr@10": 0.8
+      },
+      "unfiltered": {
+        "n": 36,
+        "lesson_hit@5": 0.7777777777777778,
+        "mrr@10": 0.6188271604938271
+      }
+    }
+  },
+  "SPARSE": {
+    "lesson_hit@1": 0.66,
+    "lesson_hit@5": 0.86,
+    "lesson_hit@10": 0.9,
+    "quote_hit@1": 0.18,
+    "quote_hit@5": 0.48,
+    "quote_hit@10": 0.58,
+    "mrr@10": 0.735,
+    "missed_question_ids": [
+      7,
+      11,
+      15,
+      25,
+      50
+    ],
+    "latency_ms": 22.41046905517578,
+    "groups": {
+      "filtered": {
+        "n": 14,
+        "lesson_hit@5": 0.9285714285714286,
+        "mrr@10": 0.8928571428571429
+      },
+      "multi_lesson": {
+        "n": 5,
+        "lesson_hit@5": 0.8,
+        "mrr@10": 0.64
+      },
+      "section=Driving Event": {
+        "n": 1,
+        "lesson_hit@5": 1.0,
+        "mrr@10": 1.0
+      },
+      "section=Evidence": {
+        "n": 9,
+        "lesson_hit@5": 0.8888888888888888,
+        "mrr@10": 0.8333333333333334
+      },
+      "section=Lesson Learned": {
+        "n": 17,
+        "lesson_hit@5": 0.8235294117647058,
+        "mrr@10": 0.7137254901960784
+      },
+      "section=Recommendation": {
+        "n": 18,
+        "lesson_hit@5": 0.8333333333333334,
+        "mrr@10": 0.6824074074074074
+      },
+      "section=References": {
+        "n": 5,
+        "lesson_hit@5": 1.0,
+        "mrr@10": 0.7666666666666667
+      },
+      "unfiltered": {
+        "n": 36,
+        "lesson_hit@5": 0.8333333333333334,
+        "mrr@10": 0.6736111111111112
+      }
+    }
+  },
+  "HYBRID": {
+    "lesson_hit@1": 0.7,
+    "lesson_hit@5": 0.88,
+    "lesson_hit@10": 0.94,
+    "quote_hit@1": 0.18,
+    "quote_hit@5": 0.7,
+    "quote_hit@10": 0.82,
+    "mrr@10": 0.7777222222222222,
+    "missed_question_ids": [
+      8,
+      25,
+      50
+    ],
+    "latency_ms": 48.74070644378662,
+    "groups": {
+      "filtered": {
+        "n": 14,
+        "lesson_hit@5": 0.9285714285714286,
+        "mrr@10": 0.9285714285714286
+      },
+      "multi_lesson": {
+        "n": 5,
+        "lesson_hit@5": 0.8,
+        "mrr@10": 0.64
+      },
+      "section=Driving Event": {
+        "n": 1,
+        "lesson_hit@5": 1.0,
+        "mrr@10": 1.0
+      },
+      "section=Evidence": {
+        "n": 9,
+        "lesson_hit@5": 0.8888888888888888,
+        "mrr@10": 0.8148148148148148
+      },
+      "section=Lesson Learned": {
+        "n": 17,
+        "lesson_hit@5": 0.8823529411764706,
+        "mrr@10": 0.7683006535947713
+      },
+      "section=Recommendation": {
+        "n": 18,
+        "lesson_hit@5": 0.8888888888888888,
+        "mrr@10": 0.7680555555555555
+      },
+      "section=References": {
+        "n": 5,
+        "lesson_hit@5": 0.8,
+        "mrr@10": 0.7333333333333333
+      },
+      "unfiltered": {
+        "n": 36,
+        "lesson_hit@5": 0.8611111111111112,
+        "mrr@10": 0.7190586419753087
+      }
+    }
+  }
+}

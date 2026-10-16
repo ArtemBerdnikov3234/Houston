@@ -1,31 +1,39 @@
 """NASA Lessons Learned Information System (LLIS) Scraper & Preprocessor for RAG.
 
 Скачивает уроки NASA LLIS, проводит глубокую очистку и семантическую нормализацию текста,
-сохраняет метаданные и структуру документа в формате Markdown, готовом к чанкингу в LangChain / LlamaIndex.
+сохраняет метаданные и структуру документа в формате Markdown, готовом к чанкингу в LangChain.
 
 Установка:  pip install requests beautifulsoup4
-Запуск:     python llis_scraper.py
-Результат:  llis_full.json и llis_full.jsonl (вся база LLIS)
+Запуск:     python llis_scraper.py                         # скачать всю базу и обработать
+            python llis_scraper.py --from-raw llis_raw.json  # переобработать сохраненный ответ API
+Результат:  llis_full.json (вся база LLIS), llis_raw.json (сырой ответ API)
 """
 
+import argparse
+import hashlib
 import html
 import json
 import os
 import re
 import time
+import warnings
 from typing import Any, Dict, List, Optional
 
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
+
+warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
 
 # ==================== КОНФИГУРАЦИЯ ====================
 URL = "https://llis.nasa.gov/llis/lesson/_search"
+SITE = "https://llis.nasa.gov"
 MAX_RECORDS = None      # Целевое число документов (None = вся база)
 ORG = None              # None = все центры NASA; или "msfc", "ksc", "jpl", "jsc", "gsfc", "arc", "larc"
 PAGE_SIZE = 50          # Размер пачки в одном API-запросе
 PAUSE = 0.4             # Пауза между запросами (сек)
 RETRIES = 4             # Число повторов запроса при сетевой ошибке
 OUTPUT_PREFIX = "llis_full" if not (ORG or MAX_RECORDS) else f"llis_{ORG or 'all'}_{MAX_RECORDS or 'all'}"
+RAW_PATH = "llis_raw.json"
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)",
@@ -34,10 +42,26 @@ HEADERS = {
 
 # Строковые маркеры отсутствия информации в NASA LLIS
 DUMMY_VALUES = {
-    "none", "none.", "n/a", "na", "null", "tbd", "unknown",
+    "none", "none.", "n/a", "na", "null", "tbd", "unknown", "not specified", "various",
     "no recommendation", "no recommendations", "no recommendation.",
     "not applicable", "see recommendation", "see lesson", "n / a"
 }
+# Короткие отсылки вместо текста секции: «See "Recommendations" section above», «Same as Lesson Learned»
+PLACEHOLDER_RE = re.compile(
+    r"^\(?see (the )?\"?(recommendations?|lessons?( learned)?|driving event|abstract|above|below|attach\w*|report|pdf)\b"
+    r"|^same as\b|^no description|^this is (only )?a test|^tbd\b|^click (here )?to view"
+    r"|^the text has been redacted",
+    re.IGNORECASE,
+)
+PLACEHOLDER_MAX_LEN = 100
+
+# Служебный маркер «настоящего» переноса строки (из тегов). Сырые переводы строк внутри HTML — это пробелы.
+NL = "\u2029"
+HTML_STRUCTURE_RE = re.compile(r"<(p|br|div|li|ul|ol|table|tr|h[1-6])\b", re.IGNORECASE)
+LIST_MARKER_RE = re.compile(r"^([-*•]|\d+[\.)]|[a-zA-Z][\.)])\s+")
+ORPHAN_LINE_RE = re.compile(r"^[-*•_^|]+$")   # строки из одних маркеров: пустые пункты, осиротевшие ^/_
+# Служебные строки веб-страницы, бессмысленные без самой страницы
+BOILERPLATE_LINE_RE = re.compile(r"^click (here )?to view\b", re.IGNORECASE)
 
 
 def build_payload(start: int, size: int) -> dict:
@@ -81,15 +105,29 @@ def is_dummy_value(text: str) -> bool:
     return cleaned in DUMMY_VALUES or cleaned == ""
 
 
+def is_placeholder(text: str) -> bool:
+    """Заглушка или короткая отсылка к другой секции вместо содержательного текста."""
+    t = text.strip()
+    return is_dummy_value(t) or (len(t) < PLACEHOLDER_MAX_LEN and bool(PLACEHOLDER_RE.match(t)))
+
+
+def _flat(node) -> str:
+    """Текст узла: пробелы схлопнуты, маркеры переносов строк сохранены."""
+    t = re.sub(r"[ \t\r\n\f\v]+", " ", node.get_text())
+    t = re.sub(f" *{NL} *", NL, t)
+    return t.strip(" " + NL)
+
+
 def html_to_markdown(raw_html: Any) -> str:
     """Преобразует произвольный HTML в чистый, структурированный Markdown.
-    
+
     1. Раскрывает HTML-сущности (&apos;, &quot;, &deg;, &plusmn;, &micro;, &reg;, &amp;).
-    2. Преобразует <table> в аккуратные Markdown-таблицы.
-    3. Преобразует <ol> и <ul> в списки (1. ... и - ...), предотвращая дублирование номеров.
-    4. Преобразует <sub> и <sup> в математические индексы (H_2O, 10^6).
-    5. Заменяет <p>, <div>, <br> на нормализованные переносы строк.
-    6. Чистит неразрывные пробелы (\xa0), нулевые пробелы (\u200b) и лишние пробелы.
+    2. Сырые переводы строк внутри HTML считает пробелами (как браузер), переносы задают только теги;
+       в простом тексте без разметки переводы строк сохраняются.
+    3. Преобразует <table> в Markdown-таблицы, пропуская пустые строки.
+    4. Преобразует <ol>/<ul> (включая вложенные) в списки, отбрасывая пустые пункты (<li><br/></li>).
+    5. Преобразует непустые <sub>/<sup> в индексы (H_2O, 10^6).
+    6. Чистит \xa0, ​, артефакт двойной кодировки «Â» и строки из одних маркеров.
     """
     if raw_html is None:
         return ""
@@ -102,69 +140,96 @@ def html_to_markdown(raw_html: Any) -> str:
     if is_dummy_value(text):
         return ""
 
-    # Раскрываем HTML-сущности (&nbsp; -> пробел, &deg; -> °, &apos; -> ' и т.д.)
     text = html.unescape(text)
-    text = text.replace("\xa0", " ").replace("\u200b", "").replace("\u202f", " ")
+    text = text.replace("\xa0", " ").replace("​", "").replace(" ", " ").replace("\r", "")
+    # Артефакты неверной кодировки: «contractorÂ¹s» -> «contractor's», «Â » -> « »
+    text = text.replace("Â¹", "'")
+    text = re.sub(r"Â(?=\s|$)", "", text)
 
-    # Обработка математических и физических индексов до парсинга тегов
-    text = re.sub(r"<sub[^>]*>(.*?)</sub>", r"_\1", text, flags=re.IGNORECASE)
-    text = re.sub(r"<sup[^>]*>(.*?)</sup>", r"^\1", text, flags=re.IGNORECASE)
+    # Индексы: только непустые <sub>/<sup> без вложенных тегов, пустые удаляются
+    text = re.sub(r"<sub[^>]*>\s*([^<>]+?)\s*</sub>", r"_\1", text, flags=re.IGNORECASE)
+    text = re.sub(r"<sup[^>]*>\s*([^<>]+?)\s*</sup>", r"^\1", text, flags=re.IGNORECASE)
+    text = re.sub(r"</?(sub|sup)[^>]*>", "", text, flags=re.IGNORECASE)
+    # Невалидный «</br>» парсер молча выбрасывает, склеивая слова — приводим все варианты к <br>
+    text = re.sub(r"</?\s*br\s*/?\s*>", "<br>", text, flags=re.IGNORECASE)
+    text = text.replace("</</", "</")  # битый закрывающий тег «</</TD>» ломает разбор таблицы
+    # Курсив вплотную к соседнему слову («(<i>since</i>R = 0.98)») — отделяем пробелом
+    text = re.sub(r"</(i|em)>(?=\w)", r"</\1> ", text, flags=re.IGNORECASE)
+    text = re.sub(r"(?<=\w)<(i|em)>", r" <\1>", text, flags=re.IGNORECASE)
+    # Конец фразы, отделенный от следующей только тегом («Counterfeiting.</b>Charter», «operation.<LO>Cutter»)
+    text = re.sub(r"([.!?:;])((?:<[^>]+>)+)(?=[A-Z])", r"\1\2 ", text)
+
+    if HTML_STRUCTURE_RE.search(text):
+        text = re.sub(r"\s+", " ", text)
+    else:
+        text = text.replace("\n", NL)
 
     soup = BeautifulSoup(text, "html.parser")
 
-    # Преобразование таблиц HTML в Markdown
+    for br in soup.find_all("br"):
+        br.replace_with(NL)
+
+    # Блочные элементы -> абзацы (до таблиц и списков, чтобы абзацы внутри ячеек и пунктов не склеивались)
+    for block in soup.find_all(["p", "div", "blockquote", "h1", "h2", "h3", "h4", "h5", "h6"]):
+        block.insert_before(NL * 2)
+        block.insert_after(NL * 2)
+        block.unwrap()
+
+    # Таблицы HTML -> Markdown
     for table in soup.find_all("table"):
         rows = []
         for tr in table.find_all("tr"):
-            cells = [re.sub(r"\s+", " ", c.get_text(" ", strip=True)) for c in tr.find_all(["th", "td"])]
-            if cells:
+            cells = [_flat(c).replace(NL, " ") for c in tr.find_all(["th", "td"])]
+            if any(cells):
                 rows.append("| " + " | ".join(cells) + " |")
-        if rows:
-            # Если найдена шапка или несколько строк, вставляем разделитель Markdown
-            num_cols = len(table.find_all("tr")[0].find_all(["th", "td"]))
-            if len(rows) > 1 and num_cols > 0:
-                header_sep = "| " + " | ".join(["---"] * num_cols) + " |"
-                rows.insert(1, header_sep)
-            table.replace_with("\n\n" + "\n".join(rows) + "\n\n")
+        if len(rows) > 1:
+            num_cols = rows[0].count(" | ") + 1
+            rows.insert(1, "| " + " | ".join(["---"] * num_cols) + " |")
+        table.replace_with(NL * 2 + NL.join(rows) + NL * 2 if rows else NL)
 
-    # Преобразование списков <ul> (ненумерованные)
-    for ul in soup.find_all("ul"):
-        for li in ul.find_all("li", recursive=False):
-            li_text = li.get_text(" ", strip=True)
-            # Проверяем, не начинается ли элемент уже с маркера или цифры
-            if not re.match(r"^([-*•]|\d+[\.)]|[a-zA-Z][\.)])\s+", li_text):
-                li_text = "- " + li_text
+    # Списки: от самых вложенных к внешним, чтобы вложенные пункты получили отступ
+    for lst in reversed(soup.find_all(["ul", "ol"])):
+        idx = 0
+        for li in lst.find_all("li", recursive=False):
+            content = _flat(li)
+            if not re.search(r"\w", content) or is_dummy_value(content):
+                li.decompose()
+                continue
+            idx += 1
+            lines = [ln for ln in content.split(NL) if ln.strip()]
+            first = lines[0]
+            if not LIST_MARKER_RE.match(first):
+                first = (f"{idx}. " if lst.name == "ol" else "- ") + first
             else:
-                li_text = re.sub(r"^[•*]\s*", "- ", li_text)
-            li.replace_with("\n" + li_text + "\n")
+                first = re.sub(r"^[•*]\s*", "- ", first)
+            li.replace_with(NL + NL.join([first] + ["  " + ln for ln in lines[1:]]) + NL)
+        lst.replace_with(NL + lst.get_text() + NL)
 
-    # Преобразование списков <ol> (нумерованные)
-    for ol in soup.find_all("ol"):
-        for idx, li in enumerate(ol.find_all("li", recursive=False), 1):
-            li_text = li.get_text(" ", strip=True)
-            if not re.match(r"^(\d+[\.)]|[a-zA-Z][\.)])\s+", li_text):
-                li_text = f"{idx}. " + li_text
-            li.replace_with("\n" + li_text + "\n")
+    clean = soup.get_text().replace(NL, "\n")
+    lines = [re.sub(r"[ \t]+", " ", ln).strip() for ln in clean.split("\n")]
+    lines = [ln for ln in lines if not ORPHAN_LINE_RE.match(ln) and not BOILERPLATE_LINE_RE.match(ln)]
+    clean = re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip()
+    # В исходных данных NASA встречаются кавычки, потерявшие «&» и «;» («quotCorrectly orient...quot»)
+    # или экранированные дважды («&quot)»); слова quota/quote/quotient/aliquot не затрагиваются
+    clean = re.sub(r"&quot;?|(?<!ali)quot(?![aei])", '"', clean)
+    return "" if is_dummy_value(clean) else clean
 
-    # Обработка параграфов, заголовков и разрывов строк
-    for block in soup.find_all(["p", "div", "blockquote"]):
-        block_text = block.get_text(" ", strip=True)
-        block.replace_with("\n\n" + block_text + "\n\n")
 
-    for br in soup.find_all("br"):
-        br.replace_with("\n")
+def clean_section(*raw_values: Any) -> str:
+    """Очищает текст секции. Если в API есть несколько версий поля: версия, целиком входящая
+    в другую, отбрасывается (берется более полная); действительно разные тексты объединяются."""
+    texts = [t for t in (html_to_markdown(v) for v in raw_values) if t and not is_placeholder(t)]
+    norm = lambda t: re.sub(r"\W+", " ", t).lower().strip()
+    kept: List[str] = []
+    for t in sorted(dict.fromkeys(texts), key=len, reverse=True):
+        if not any(norm(t) in norm(k) for k in kept):
+            kept.append(t)
+    return "\n\n".join(kept)
 
-    # Получаем чистый текст
-    clean = soup.get_text()
 
-    # Финальная нормализация пробелов и переносов строк
-    clean = clean.replace("\r", "")
-    clean = re.sub(r"[ \t]+", " ", clean)
-    clean = re.sub(r"^[ \t]+|[ \t]+$", "", clean, flags=re.MULTILINE)
-    clean = re.sub(r"\n{3,}", "\n\n", clean)
-
-    res = clean.strip()
-    return "" if is_dummy_value(res) else res
+def normalize_category(name: str) -> str:
+    """Унифицирует написание: «Safety & Mission Assurance» -> «Safety and Mission Assurance»."""
+    return re.sub(r"\s+", " ", name.replace("&", " and ")).strip()
 
 
 def parse_categories(raw_categories: Any) -> tuple[List[str], str]:
@@ -192,11 +257,62 @@ def parse_categories(raw_categories: Any) -> tuple[List[str], str]:
     elif isinstance(raw_categories, str):
         cat_names = [c.strip() for c in raw_categories.split(";") if c.strip()]
 
-    # Фильтруем пустые и заглушки
-    filtered = [c for c in cat_names if not is_dummy_value(c)]
+    # Фильтруем пустые и заглушки, унифицируем «&»/«and»
+    filtered = [normalize_category(c) for c in cat_names if not is_dummy_value(c)]
     # Дедупликация с сохранением порядка
     unique_cats = list(dict.fromkeys(filtered))
     return unique_cats, "; ".join(unique_cats)
+
+
+def parse_keywords(s: dict) -> List[str]:
+    """Ключевые слова из tags и classification (без служебного «Lesson Learned»)."""
+    words = []
+    for field in ("tags", "classification"):
+        raw = html_to_markdown(s.get(field))
+        words += [w.strip().lower() for w in raw.split(",") if w.strip()]
+    return list(dict.fromkeys(w for w in words if w != "lesson learned" and not is_dummy_value(w)))
+
+
+def parse_attachments(s: dict) -> List[Dict[str, str]]:
+    """Вложения урока. URL есть только у поля attachments; у documentName* сохраняется лишь название."""
+    items, seen = [], set()
+    for a in s.get("attachments") or []:
+        name = str(a.get("name") or "").strip()
+        link = str(a.get("link") or "").strip()
+        if name and name not in seen:
+            seen.add(name)
+            items.append({"name": name, "url": SITE + link if link.startswith("/") else link})
+    for i in range(10):
+        name = str(s.get(f"documentName{i}") or "").strip()
+        if name and name not in seen:
+            seen.add(name)
+            items.append({"name": name, "url": ""})
+    return items
+
+
+def derive_title(sections: Dict[str, str]) -> str:
+    """Название из первой фразы текста — для уроков, у которых в API title = «None»."""
+    for key in ("abstract", "driving_event", "lesson_learned", "recommendation"):
+        text = sections.get(key)
+        if text:
+            line = LIST_MARKER_RE.sub("", text.split("\n")[0]).strip()
+            first = re.split(r"(?<=[.!?])\s", line)[0].rstrip(".")
+            if len(first) < 30:  # обрыв на сокращении вроде «Feb.» — берем всю строку
+                first = line.rstrip(".")
+            if len(first) > 100:
+                first = first[:100].rsplit(" ", 1)[0] + "…"
+            return first
+    return "Untitled lesson"
+
+
+SECTION_HEADERS = {
+    "abstract": "Abstract",
+    "driving_event": "Driving Event / Background",
+    "lesson_learned": "Lesson Learned",
+    "recommendation": "Recommendation",
+    "evidence": "Evidence of Recurrence Control Effectiveness",
+    "references": "Related Documents and Policy",
+}
 
 
 def parse_hit(hit: dict) -> Optional[dict]:
@@ -204,8 +320,6 @@ def parse_hit(hit: dict) -> Optional[dict]:
     s = hit.get("_source", {})
     lesson_id = hit["_id"]
 
-    # Основные поля
-    title = html_to_markdown(s.get("title"))
     date_str = str(s.get("lesson_date") or "").strip()
 
     # Извлечение числового года для мета-фильтрации
@@ -230,18 +344,34 @@ def parse_hit(hit: dict) -> Optional[dict]:
         mission_raw = mission_raw.get("name")
     mission_dir = html_to_markdown(mission_raw)
 
-    # Категории
     categories_list, categories_str = parse_categories(s.get("categories"))
+    program = html_to_markdown(s.get("programRelation"))
+    program_phase = html_to_markdown(s.get("programPhase")).replace("»", ">")
+    if program_phase.lower() in ("not applicable", "not specified"):
+        program_phase = ""
+    keywords = parse_keywords(s)
+    attachments = parse_attachments(s)
 
-    # Секции документа
-    abstract = html_to_markdown(s.get("lessonAbstract"))
-    driving_event = html_to_markdown(s.get("drivingEvent") or s.get("description_event"))
-    lesson_learned = html_to_markdown(s.get("lesson_learned") or s.get("lesson"))
-    recommendation = html_to_markdown(s.get("recommendation"))
+    # Секции документа. У части уроков текст продублирован в двух полях API разной полноты.
+    sections = {
+        "abstract": clean_section(s.get("lessonAbstract")),
+        "driving_event": clean_section(s.get("drivingEvent"), s.get("description_event")),
+        "lesson_learned": clean_section(s.get("lesson_learned"), s.get("lesson")),
+        "recommendation": clean_section(s.get("recommendation")),
+        "evidence": clean_section(s.get("evidence")),
+    }
+    policy = clean_section(s.get("relatedPolicy"))
+    documented = clean_section(s.get("lessonDocumented"))
+    sections["references"] = "\n\n".join(dict.fromkeys(t for t in (policy, documented) if t))
 
-    # Валидация качества: отбраковываем пустые записи
-    if not any([abstract, driving_event, lesson_learned, recommendation]):
+    # Валидация качества: отбраковываем записи без основного содержания
+    if not any(sections[k] for k in ("abstract", "driving_event", "lesson_learned", "recommendation")):
         return None
+
+    title = html_to_markdown(s.get("title"))
+    title_derived = not title
+    if title_derived:
+        title = derive_title(sections)
 
     # Построение структурированного Markdown-представления документа
     header_lines = [
@@ -251,19 +381,19 @@ def parse_hit(hit: dict) -> Optional[dict]:
     ]
     if mission_dir:
         header_lines.append(f"- **Mission Directorate:** {mission_dir}")
+    if program:
+        header_lines.append(f"- **Program:** {program}")
+    if program_phase:
+        header_lines.append(f"- **Program Phase:** {program_phase}")
     if categories_str:
         header_lines.append(f"- **Categories:** {categories_str}")
-    header_lines.append(f"- **Source URL:** https://llis.nasa.gov/lesson/{lesson_id}")
+    if keywords:
+        header_lines.append(f"- **Keywords:** {', '.join(keywords)}")
+    header_lines.append(f"- **Source URL:** {SITE}/lesson/{lesson_id}")
 
-    sections_md = []
-    if abstract:
-        sections_md.append(f"## Abstract\n{abstract}")
-    if driving_event:
-        sections_md.append(f"## Driving Event / Background\n{driving_event}")
-    if lesson_learned:
-        sections_md.append(f"## Lesson Learned\n{lesson_learned}")
-    if recommendation:
-        sections_md.append(f"## Recommendation\n{recommendation}")
+    sections_md = [f"## {SECTION_HEADERS[k]}\n{v}" for k, v in sections.items() if v]
+    if attachments:
+        sections_md.append("## Attachments\n" + "\n".join(f"- {a['name']}" for a in attachments))
 
     full_markdown = "\n".join(header_lines) + "\n\n" + "\n\n".join(sections_md)
 
@@ -273,37 +403,41 @@ def parse_hit(hit: dict) -> Optional[dict]:
     return {
         "id": lesson_id,
         "lesson_number": s.get("lesson_number") or lesson_id,
-        "url": f"https://llis.nasa.gov/lesson/{lesson_id}",
+        "url": f"{SITE}/lesson/{lesson_id}",
         "title": title,
         "date": date_str,
         "year": year,
         "organization": org_name,
         "org_code": org_code,
         "mission_directorate": mission_dir,
+        "program": program,
+        "program_phase": program_phase,
         "categories": categories_str,
         "categories_list": categories_list,
-        "sections": {
-            "abstract": abstract,
-            "driving_event": driving_event,
-            "lesson_learned": lesson_learned,
-            "recommendation": recommendation,
-        },
+        "keywords": keywords,
+        "attachments": attachments,
+        "sections": sections,
         "full_text": full_markdown,
-        # Метаданные, готовые для передачи в LangChain Document или LlamaIndex Node
+        # Метаданные, готовые для передачи в LangChain Document
         "metadata": {
             "lesson_id": lesson_id,
             "title": title,
+            "title_derived": title_derived,
             "date": date_str,
             "year": year,
             "org_code": org_code,
             "org_name": org_name,
             "mission_directorate": mission_dir,
+            "program": program,
+            "program_phase": program_phase,
             "categories": categories_str,
-            "url": f"https://llis.nasa.gov/lesson/{lesson_id}",
-            "has_abstract": bool(abstract),
-            "has_driving_event": bool(driving_event),
-            "has_lesson": bool(lesson_learned),
-            "has_recommendation": bool(recommendation),
+            "url": f"{SITE}/lesson/{lesson_id}",
+            "has_abstract": bool(sections["abstract"]),
+            "has_driving_event": bool(sections["driving_event"]),
+            "has_lesson": bool(sections["lesson_learned"]),
+            "has_recommendation": bool(sections["recommendation"]),
+            "has_evidence": bool(sections["evidence"]),
+            "duplicate_of": None,
             "char_count": len(full_markdown),
             "word_count": word_count,
             "estimated_tokens": estimated_tokens,
@@ -311,71 +445,88 @@ def parse_hit(hit: dict) -> Optional[dict]:
     }
 
 
-def main():
-    print("=" * 60)
-    print("  NASA LLIS — Сбор и подготовка данных для RAG-системы")
-    print("=" * 60)
-    print(f"Целевой центр NASA : {ORG.upper() if ORG else 'Все центры'}")
-    print(f"Лимит документов    : {MAX_RECORDS if MAX_RECORDS else 'Вся база'}")
+def mark_duplicates(records: List[dict]) -> int:
+    """Помечает уроки, текст которых полностью совпадает с более ранним (по ID) уроком."""
+    first_by_hash: Dict[str, str] = {}
+    marked = 0
+    for r in sorted(records, key=lambda r: int(r["id"]) if r["id"].isdigit() else r["id"]):
+        body = "\n".join(r["sections"][k] for k in ("abstract", "driving_event", "lesson_learned", "recommendation"))
+        key = hashlib.md5(re.sub(r"\s+", " ", body.lower()).encode()).hexdigest()
+        if key in first_by_hash:
+            r["metadata"]["duplicate_of"] = first_by_hash[key]
+            marked += 1
+        else:
+            first_by_hash[key] = r["id"]
+    return marked
 
+
+def fetch_all() -> List[dict]:
+    """Скачивает сырые хиты из API с пагинацией."""
     session = requests.Session()
     first = fetch_page(session, 0, PAGE_SIZE)
     total_in_db = get_total(first)
     target_count = min(total_in_db, MAX_RECORDS) if MAX_RECORDS else total_in_db
-
     print(f"Доступно в базе     : {total_in_db}")
     print(f"Будет выгружено     : {target_count}")
     print("-" * 60)
 
-    records: List[dict] = []
+    hits: List[dict] = []
     seen = set()
-    rejected = 0
     start = 0
     data = first
-
     while True:
-        hits = data["hits"]["hits"]
-        if not hits:
+        page = data["hits"]["hits"]
+        if not page:
             break
-
-        for h in hits:
-            doc_id = h["_id"]
-            if doc_id not in seen:
-                seen.add(doc_id)
-                doc = parse_hit(h)
-                if doc:
-                    records.append(doc)
-                else:
-                    rejected += 1
-
-                if MAX_RECORDS and len(records) >= MAX_RECORDS:
-                    break
-
-        print(f"  -> Обработано: {len(records)} / {target_count}")
-
-        if (MAX_RECORDS and len(records) >= MAX_RECORDS) or start + PAGE_SIZE >= total_in_db:
+        for h in page:
+            if h["_id"] not in seen:
+                seen.add(h["_id"])
+                hits.append(h)
+        print(f"  -> Скачано: {len(hits)} / {target_count}")
+        if (MAX_RECORDS and len(hits) >= MAX_RECORDS) or start + PAGE_SIZE >= total_in_db:
             break
-
         start += PAGE_SIZE
         time.sleep(PAUSE)
         data = fetch_page(session, start, PAGE_SIZE)
+    return hits[:MAX_RECORDS] if MAX_RECORDS else hits
 
-    # Сохраняем в JSON и JSONL
+
+def main():
+    parser = argparse.ArgumentParser(description="NASA LLIS scraper & preprocessor")
+    parser.add_argument("--from-raw", metavar="PATH", help="не обращаться к API, обработать сохраненный ответ")
+    args = parser.parse_args()
+
+    print("=" * 60)
+    print("  NASA LLIS — Сбор и подготовка данных для RAG-системы")
+    print("=" * 60)
+
+    if args.from_raw:
+        with open(args.from_raw, "r", encoding="utf-8") as f:
+            hits = json.load(f)
+        print(f"Сырые данные        : {args.from_raw} ({len(hits)} записей)")
+    else:
+        print(f"Целевой центр NASA : {ORG.upper() if ORG else 'Все центры'}")
+        print(f"Лимит документов    : {MAX_RECORDS if MAX_RECORDS else 'Вся база'}")
+        hits = fetch_all()
+        with open(RAW_PATH, "w", encoding="utf-8") as f:
+            json.dump(hits, f, ensure_ascii=False)
+
+    records = [doc for doc in (parse_hit(h) for h in hits) if doc]
+    rejected = len(hits) - len(records)
+    duplicates = mark_duplicates(records)
+
     json_path = f"{OUTPUT_PREFIX}.json"
-    jsonl_path = f"{OUTPUT_PREFIX}.jsonl"
 
     print("\nСохранение файлов...")
-    with open(jsonl_path, "w", encoding="utf-8") as f:
-        for r in records:
-            f.write(json.dumps(r, ensure_ascii=False) + "\n")
-
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(records, f, ensure_ascii=False, indent=2)
 
     print("=" * 60)
-    print(f"УСПЕШНО СОХРАНЕНО: {len(records)} документов (уникальных ID: {len(seen)}, отбраковано пустых: {rejected})")
+    print(f"УСПЕШНО СОХРАНЕНО: {len(records)} документов "
+          f"(получено: {len(hits)}, отбраковано пустых: {rejected}, полных дублей помечено: {duplicates})")
     print(f"  - JSON  : {os.path.abspath(json_path)}")
-    print(f"  - JSONL : {os.path.abspath(jsonl_path)}")
+    if not args.from_raw:
+        print(f"  - RAW   : {os.path.abspath(RAW_PATH)}")
     print("=" * 60)
 
 

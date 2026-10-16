@@ -59,9 +59,8 @@ scratch/
 # Qdrant data volume (docker-compose)
 qdrant_storage/
 
-# Legacy / experimental initial runs
-llis_msfc.json
-llis_msfc.jsonl
-
 # FastEmbed model cache (~0.5 GB, downloaded on first run)
 .fastembed_cache/
+
+# Raw API dump (re-created by llis_scraper.py, ~MBs)
+llis_raw.json

@@ -2,7 +2,7 @@
 
 Запуск:
     python inspect_dataset.py                    # Проверит самый свежий файл llis_*.json
-    python inspect_dataset.py llis_all_1000.json # Проверит конкретный файл
+    python inspect_dataset.py llis_full.json     # Проверит конкретный файл
 """
 
 import glob
@@ -35,7 +35,7 @@ for org, count in sorted(orgs.items(), key=lambda x: x[1], reverse=True)[:8]:
 
 # Наличие секций
 print("\nЗаполненность разделов:")
-sections = ["abstract", "driving_event", "lesson_learned", "recommendation"]
+sections = ["abstract", "driving_event", "lesson_learned", "recommendation", "evidence", "references"]
 for s in sections:
     filled = sum(1 for r in recs if r.get("sections", {}).get(s) or r.get(s))
     print(f"  - {s}: {filled}/{len(recs)} ({filled*100//len(recs)}%)")

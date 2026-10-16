@@ -1,4 +1,4 @@
-"""Общая конфигурация векторного хранилища Qdrant для AeroRAG (LangChain + FastEmbed).
+"""Общая конфигурация векторного хранилища Qdrant для проекта Houston (LangChain + FastEmbed).
 
 Коллекция хранит для каждого чанка два вектора:
 - "dense"  — семантический эмбеддинг BAAI/bge-base-en-v1.5 (768 dim, cosine);
@@ -10,7 +10,7 @@
     from qdrant_store import get_vector_store
     store = get_vector_store()                       # гибридный поиск
     store.similarity_search("hydraulic gauge failure", k=5,
-                            filter=field_filter("section", "recommendation"))
+                            filter=field_filter("sections", "recommendation"))
 """
 
 import os
@@ -42,6 +42,10 @@ ID_NAMESPACE = uuid.UUID("7c1e4a52-3f0b-4d1a-9a57-6f2b8c0d9e11")
 # Поля метаданных, по которым строятся payload-индексы для фильтрации
 PAYLOAD_INDEXES = {
     "metadata.lesson_id": models.PayloadSchemaType.KEYWORD,
+    "metadata.lesson_ids": models.PayloadSchemaType.KEYWORD,   # все уроки, где встречается текст чанка
+    "metadata.sections": models.PayloadSchemaType.KEYWORD,     # все секции, где встречается текст чанка
+    "metadata.program": models.PayloadSchemaType.KEYWORD,
+    "metadata.keywords": models.PayloadSchemaType.KEYWORD,
     "metadata.org_code": models.PayloadSchemaType.KEYWORD,
     "metadata.section": models.PayloadSchemaType.KEYWORD,
     "metadata.categories": models.PayloadSchemaType.KEYWORD,
@@ -111,7 +115,11 @@ def get_vector_store(
 
 
 def field_filter(field: str, value) -> models.Filter:
-    """Фильтр по полю метаданных, например field_filter("org_code", "JPL")."""
+    """Фильтр по полю метаданных, например field_filter("org_code", "JPL").
+
+    Для секций и уроков используйте списочные поля "sections" и "lesson_ids": одинаковый текст
+    хранится одним чанком, и в них перечислены все его вхождения (поле "section" — только первое).
+    """
     return models.Filter(must=[
         models.FieldCondition(key=f"metadata.{field}", match=models.MatchValue(value=value)),
     ])

@@ -1,4 +1,4 @@
-# Векторная БД Qdrant для AeroRAG.
+# Векторная БД Qdrant для проекта Houston.
 # Запуск:   docker compose up -d
 # Проверка: http://localhost:6333/healthz  |  дашборд: http://localhost:6333/dashboard
 services:

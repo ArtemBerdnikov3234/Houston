@@ -3,35 +3,131 @@
     "lesson_hit@1": 0.92,
     "lesson_hit@5": 0.98,
     "lesson_hit@10": 0.98,
-    "quote_hit@1": 0.68,
+    "quote_hit@1": 0.66,
     "quote_hit@5": 0.96,
     "quote_hit@10": 0.98,
     "mrr@10": 0.9466666666666668,
     "missed_question_ids": [
       21
     ],
-    "latency_ms": 38.738508224487305
+    "latency_ms": 44.27994728088379,
+    "groups": {
+      "section=Abstract": {
+        "n": 21,
+        "lesson_hit@5": 1.0,
+        "mrr@10": 0.9761904761904762
+      },
+      "section=Driving Event": {
+        "n": 22,
+        "lesson_hit@5": 0.9545454545454546,
+        "mrr@10": 0.9318181818181818
+      },
+      "section=Lesson Learned": {
+        "n": 2,
+        "lesson_hit@5": 1.0,
+        "mrr@10": 0.6666666666666666
+      },
+      "section=Recommendation": {
+        "n": 1,
+        "lesson_hit@5": 1.0,
+        "mrr@10": 1.0
+      },
+      "section=Title": {
+        "n": 4,
+        "lesson_hit@5": 1.0,
+        "mrr@10": 1.0
+      },
+      "unfiltered": {
+        "n": 50,
+        "lesson_hit@5": 0.98,
+        "mrr@10": 0.9466666666666668
+      }
+    }
   },
   "SPARSE": {
     "lesson_hit@1": 0.96,
     "lesson_hit@5": 1.0,
     "lesson_hit@10": 1.0,
-    "quote_hit@1": 0.76,
+    "quote_hit@1": 0.72,
     "quote_hit@5": 0.98,
     "quote_hit@10": 1.0,
     "mrr@10": 0.98,
     "missed_question_ids": [],
-    "latency_ms": 8.620481491088867
+    "latency_ms": 25.371556282043457,
+    "groups": {
+      "section=Abstract": {
+        "n": 21,
+        "lesson_hit@5": 1.0,
+        "mrr@10": 1.0
+      },
+      "section=Driving Event": {
+        "n": 22,
+        "lesson_hit@5": 1.0,
+        "mrr@10": 0.9545454545454546
+      },
+      "section=Lesson Learned": {
+        "n": 2,
+        "lesson_hit@5": 1.0,
+        "mrr@10": 1.0
+      },
+      "section=Recommendation": {
+        "n": 1,
+        "lesson_hit@5": 1.0,
+        "mrr@10": 1.0
+      },
+      "section=Title": {
+        "n": 4,
+        "lesson_hit@5": 1.0,
+        "mrr@10": 1.0
+      },
+      "unfiltered": {
+        "n": 50,
+        "lesson_hit@5": 1.0,
+        "mrr@10": 0.98
+      }
+    }
   },
   "HYBRID": {
     "lesson_hit@1": 0.96,
     "lesson_hit@5": 1.0,
     "lesson_hit@10": 1.0,
-    "quote_hit@1": 0.68,
+    "quote_hit@1": 0.7,
     "quote_hit@5": 1.0,
     "quote_hit@10": 1.0,
     "mrr@10": 0.9740000000000001,
     "missed_question_ids": [],
-    "latency_ms": 37.67870903015137
+    "latency_ms": 46.0692024230957,
+    "groups": {
+      "section=Abstract": {
+        "n": 21,
+        "lesson_hit@5": 1.0,
+        "mrr@10": 0.9761904761904762
+      },
+      "section=Driving Event": {
+        "n": 22,
+        "lesson_hit@5": 1.0,
+        "mrr@10": 0.9636363636363636
+      },
+      "section=Lesson Learned": {
+        "n": 2,
+        "lesson_hit@5": 1.0,
+        "mrr@10": 1.0
+      },
+      "section=Recommendation": {
+        "n": 1,
+        "lesson_hit@5": 1.0,
+        "mrr@10": 1.0
+      },
+      "section=Title": {
+        "n": 4,
+        "lesson_hit@5": 1.0,
+        "mrr@10": 1.0
+      },
+      "unfiltered": {
+        "n": 50,
+        "lesson_hit@5": 1.0,
+        "mrr@10": 0.9740000000000001
+      }
+    }
   }
 }

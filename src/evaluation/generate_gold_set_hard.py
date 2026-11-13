@@ -21,11 +21,13 @@ import re
 import sys
 from collections import Counter
 
+from src.settings import BENCHMARKS_DIR, PROCESSED_DATA_DIR
+
 sys.stdout.reconfigure(encoding="utf-8")
 
-DATASET = "llis_full.json"
-CHUNKS = "llis_chunks.jsonl"
-OUT = "gold_set_hard"
+DATASET = PROCESSED_DATA_DIR / "llis_full.json"
+CHUNKS = PROCESSED_DATA_DIR / "llis_chunks.jsonl"
+OUT = BENCHMARKS_DIR / "gold_set_hard"
 YEARS = (1990, 2009)
 SECTION_KEYS = {
     "Driving Event": "driving_event",

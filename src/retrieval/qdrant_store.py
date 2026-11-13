@@ -7,7 +7,7 @@
 Гибридный поиск объединяет обе выдачи через Reciprocal Rank Fusion (RRF).
 
 Использование:
-    from qdrant_store import get_vector_store
+    from src.retrieval.qdrant_store import get_vector_store
     store = get_vector_store()                       # гибридный поиск
     store.similarity_search("hydraulic gauge failure", k=5,
                             filter=field_filter("sections", "recommendation"))
@@ -22,6 +22,8 @@ from langchain_core.embeddings import Embeddings
 from langchain_qdrant import FastEmbedSparse, QdrantVectorStore, RetrievalMode
 from qdrant_client import QdrantClient, models
 
+from src.settings import CACHE_DIR as PROJECT_CACHE_DIR
+
 # ==================== КОНФИГУРАЦИЯ ====================
 QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
 COLLECTION = os.getenv("QDRANT_COLLECTION", "nasa_llis")
@@ -30,7 +32,7 @@ SPARSE_MODEL = "Qdrant/bm25"
 DENSE_DIM = 768
 DENSE_NAME = "dense"
 # Модели FastEmbed кэшируются в проекте, а не во временной папке ОС
-CACHE_DIR = os.getenv("FASTEMBED_CACHE_PATH", os.path.join(os.path.dirname(os.path.abspath(__file__)), ".fastembed_cache"))
+CACHE_DIR = os.getenv("FASTEMBED_CACHE_PATH", str(PROJECT_CACHE_DIR))
 SPARSE_NAME = "sparse"
 
 # Инструкция BGE v1.5 для коротких запросов к длинным фрагментам (к документам не добавляется)

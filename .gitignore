@@ -63,4 +63,5 @@ qdrant_storage/
 .fastembed_cache/
 
 # Raw API dump (re-created by llis_scraper.py, ~MBs)
-llis_raw.json
+data/raw/*.json
+!data/raw/.gitkeep

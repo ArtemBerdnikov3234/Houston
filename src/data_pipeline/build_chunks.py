@@ -16,8 +16,8 @@
    поэтому повторная индексация в Qdrant не создает дублей.
 
 Установка:  pip install langchain-core langchain-text-splitters tokenizers
-Запуск:     python build_chunks.py                 # llis_full.json -> llis_chunks.jsonl
-            python build_chunks.py <input> <output>
+Запуск:     python -m src.data_pipeline.build_chunks
+            python -m src.data_pipeline.build_chunks <input> <output>
 """
 
 import glob
@@ -33,18 +33,19 @@ from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from tokenizers import Tokenizer
 
-from llis_scraper import is_placeholder
+from src.data_pipeline.llis_scraper import is_placeholder
+from src.settings import CACHE_DIR as PROJECT_CACHE_DIR, PROCESSED_DATA_DIR
 
 # ==================== КОНФИГУРАЦИЯ ====================
-INPUT_PATH = "llis_full.json"
-OUTPUT_PATH = "llis_chunks.jsonl"
+INPUT_PATH = str(PROCESSED_DATA_DIR / "llis_full.json")
+OUTPUT_PATH = str(PROCESSED_DATA_DIR / "llis_chunks.jsonl")
 CHUNK_SIZE = 1200       # Символов на чанк (~300 токенов)
 CHUNK_OVERLAP = 150     # Перекрытие соседних чанков внутри секции
 MIN_CHUNK = 200         # Более короткие куски приклеиваются к соседнему чанку той же секции
 MAX_TOKENS = 512        # Лимит контекста BAAI/bge-base-en-v1.5 (включая служебные токены)
 CROSS_LESSON_MIN = 300  # Одинаковый текст разных уроков сливается, только если он не короче этого
 TOKENIZER_MODEL = "BAAI/bge-base-en-v1.5"
-CACHE_DIR = os.getenv("FASTEMBED_CACHE_PATH", os.path.join(os.path.dirname(os.path.abspath(__file__)), ".fastembed_cache"))
+CACHE_DIR = os.getenv("FASTEMBED_CACHE_PATH", str(PROJECT_CACHE_DIR))
 
 # Ключ секции в датасете -> человекочитаемое название в чанке
 SECTIONS = {

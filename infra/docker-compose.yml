@@ -1,5 +1,5 @@
 # Векторная БД Qdrant для проекта Houston.
-# Запуск:   docker compose up -d
+# Запуск из корня: docker compose -f infra/docker-compose.yml up -d
 # Проверка: http://localhost:6333/healthz  |  дашборд: http://localhost:6333/dashboard
 services:
   qdrant:
@@ -10,4 +10,4 @@ services:
       - "6333:6333"   # REST API + веб-дашборд
       - "6334:6334"   # gRPC
     volumes:
-      - ./qdrant_storage:/qdrant/storage
+      - ../qdrant_storage:/qdrant/storage

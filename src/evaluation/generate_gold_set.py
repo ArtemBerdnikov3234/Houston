@@ -13,10 +13,12 @@ import json
 import os
 import sys
 
+from src.settings import BENCHMARKS_DIR, PROCESSED_DATA_DIR
+
 sys.stdout.reconfigure(encoding="utf-8")
 
 # Load full NASA LLIS dataset
-dataset_path = "llis_full.json"
+dataset_path = PROCESSED_DATA_DIR / "llis_full.json"
 with open(dataset_path, "r", encoding="utf-8") as f:
     llis_data = json.load(f)
 
@@ -588,7 +590,7 @@ for item in gold_items:
 print(f"Verified {len(verified_records)} records against NASA LLIS dataset.")
 
 # 1. Save CSV with UTF-8 BOM
-csv_file = "gold_set_50.csv"
+csv_file = BENCHMARKS_DIR / "gold_set_50.csv"
 fieldnames = [
     "Question_ID",
     "Question",
@@ -624,14 +626,14 @@ with open(csv_file, "w", encoding="utf-8-sig", newline="") as f:
 print(f"CSV saved: {csv_file}")
 
 # 2. Save JSON for Ragas / Automated Evaluation
-json_file = "gold_set_50.json"
+json_file = BENCHMARKS_DIR / "gold_set_50.json"
 with open(json_file, "w", encoding="utf-8") as f:
     json.dump(verified_records, f, ensure_ascii=False, indent=2)
 
 print(f"JSON saved: {json_file}")
 
 # 3. Save Markdown
-md_file = "gold_set_50.md"
+md_file = BENCHMARKS_DIR / "gold_set_50.md"
 with open(md_file, "w", encoding="utf-8") as f:
     f.write("# NASA Lessons Learned RAG Evaluation — Gold Set (50 QA Pairs)\n\n")
     f.write("> **Homework Compliance & Reviewer Revision Checklist:**\n")

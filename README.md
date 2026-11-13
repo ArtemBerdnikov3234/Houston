@@ -8,7 +8,7 @@
 [![Database: NASA LLIS](https://img.shields.io/badge/Data-NASA%20LLIS-orange.svg)](https://llis.nasa.gov/)
 [![Vector DB: Qdrant](https://img.shields.io/badge/Vector%20DB-Qdrant%201.19-dc244c.svg)](https://qdrant.tech/)
 [![Framework: LangChain](https://img.shields.io/badge/Framework-LangChain-1c3c3c.svg)](https://www.langchain.com/)
-[![Benchmark: Gold Set 50](https://img.shields.io/badge/Benchmark-50%20QA%20Pairs-success.svg)](./gold_set_50.csv)
+[![Benchmark: Gold Set 50](https://img.shields.io/badge/Benchmark-50%20QA%20Pairs-success.svg)](./data/benchmarks/gold_set_50.csv)
 [![Status: Phase 2](https://img.shields.io/badge/Phase%202-Qdrant%20%26%20Dataset%20Ready-brightgreen.svg)]()
 
 ---
@@ -53,19 +53,71 @@ API NASA LLIS
 
 | Файл | Что внутри | Зачем |
 | :--- | :--- | :--- |
-| `llis_full.json` | 2 116 очищенных уроков: секции, метаданные, полный текст в Markdown | Главный датасет, из него строится все остальное |
-| `llis_chunks.jsonl` | 12 471 чанк: текст фрагмента + метаданные, по строке на чанк | Обработанный датасет, который загружается в Qdrant |
-| `gold_set_50.json` (+ `.csv`, `.md`) | 50 эталонных вопросов с ответами и цитатами (2010–2025 гг.) | Основной бенчмарк; CSV — таблица для проверки, MD — отчет |
-| `gold_set_hard.json` | 50 трудных перефразированных вопросов (1990–2009 гг.) | Бенчмарк, на котором видны слабые места поиска |
-| `retrieval_eval.json`, `retrieval_eval_hard.json` | Метрики последней оценки поиска | История качества |
+| `data/processed/llis_full.json` | 2 116 очищенных уроков: секции, метаданные, полный текст в Markdown | Главный датасет, из него строится все остальное |
+| `data/processed/llis_chunks.jsonl` | 12 471 чанк: текст фрагмента + метаданные, по строке на чанк | Обработанный датасет, который загружается в Qdrant |
+| `data/benchmarks/gold_set_50.json` (+ `.csv`, `.md`) | 50 эталонных вопросов с ответами и цитатами (2010–2025 гг.) | Основной бенчмарк; CSV — таблица для проверки, MD — отчет |
+| `data/benchmarks/gold_set_hard.json` | 50 трудных перефразированных вопросов (1990–2009 гг.) | Бенчмарк, на котором видны слабые места поиска |
+| `data/evaluation/retrieval_eval.json`, `data/evaluation/retrieval_eval_hard.json` | Метрики последней оценки поиска | История качества |
 
-**Конфигурация:** `docker-compose.yml` (запуск Qdrant), `requirements.txt` (библиотеки Python).
+**Конфигурация:** `infra/docker-compose.yml` (запуск Qdrant), `requirements.txt` (библиотеки Python).
 
-**Не хранится в репозитории** (создается командами из раздела «Быстрый старт»): `venv/` (окружение Python), `.fastembed_cache/` (модели эмбеддингов, ~0.5 ГБ), `qdrant_storage/` (файлы базы Qdrant), `llis_raw.json` (сырой ответ API для повторной обработки без скачивания).
+**Не хранится в репозитории** (создается командами из раздела «Быстрый старт»): `venv/` (окружение Python), `.fastembed_cache/` (модели эмбеддингов, ~0.5 ГБ), `qdrant_storage/` (файлы базы Qdrant), `data/raw/llis_raw.json` (сырой ответ API для повторной обработки без скачивания).
 
 ---
 
 ## Архитектура и технологический стек
+
+В проекте используется Python-конвейер подготовки данных и гибридного поиска: NASA LLIS → очистка → чанки → эмбеддинги → Qdrant → оценка найденных фрагментов. Ниже зафиксирован фактически реализованный стек. Версии Python-библиотек указаны по `requirements.txt`, версия сервера — по `infra/docker-compose.yml`.
+
+| Компонент | Технология | Роль в проекте и причина использования |
+| :--- | :--- | :--- |
+| Язык | Python, заявленная поддержка 3.10+ | Обработка текстов, команды подготовки данных, индексация и оценка в одной кодовой базе. |
+| Окружение и зависимости | `venv`, `pip`, `requirements.txt` | Изолированное окружение и явно закреплённые версии прямых зависимостей. |
+| HTTP-запросы | Requests 2.34.2 | Загрузка записей NASA LLIS через API с обработкой повторных запросов. |
+| HTML-парсинг | BeautifulSoup4 4.15.0 | Разбор HTML уроков перед преобразованием в очищенный текст с Markdown-разметкой. |
+| Представление документов | LangChain Core 1.6.10 | Единый объект `Document` для текста, идентификатора и метаданных. |
+| Разбиение текста | LangChain Text Splitters 1.1.3 | Рекурсивное разбиение длинных секций с перекрытием, чтобы сохранить контекст. |
+| Проверка токенов | Hugging Face `tokenizers` | Подсчёт токенов чанков токенизатором BGE; импортируется напрямую, но отдельная версия в `requirements.txt` пока не закреплена. |
+| Вычисление эмбеддингов | FastEmbed 0.9.0 | Локальное построение векторов через ONNX; текущий сценарий рассчитан на CPU. |
+| Семантическая модель | `BAAI/bge-base-en-v1.5` | Англоязычные dense-векторы размерности 768 для поиска по смыслу. |
+| Лексическая модель | `Qdrant/bm25` | Sparse-поиск для терминов, аббревиатур и номеров; IDF учитывается на стороне Qdrant. |
+| Векторная база | Qdrant 1.19.2 | Хранение обоих типов векторов и метаданных, фильтрация и гибридный поиск с объединением рангов RRF. |
+| Клиент базы | qdrant-client 1.19.1 | Создание коллекции, payload-индексов и обращение к серверу. |
+| Интеграция поиска | langchain-qdrant 1.1.0 | Доступ к Qdrant как к `QdrantVectorStore`, режимы dense, sparse и hybrid. |
+| Запуск инфраструктуры | Docker и Docker Compose | Воспроизводимый запуск сервера Qdrant с постоянным томом данных. |
+| Форматы хранения | JSON, JSONL, CSV, Markdown | JSON для уроков и метрик, JSONL для чанков, CSV и Markdown для просмотра бенчмарка. |
+| Оценка качества | Собственные Python-скрипты, два Gold Set по 50 вопросов | Проверка цитат и расчёт Lesson Hit@k, Quote Hit@k, MRR@10 и времени поиска. |
+| Управление исходниками | Git и GitHub | История изменений, совместная работа и хранение кода, документации и подготовленных наборов. |
+
+Такое сочетание уже используется в коде: BGE находит близкие по смыслу фрагменты, BM25 дополняет его точными совпадениями, а Qdrant объединяет результаты. Отдельные модули подготовки и оценки позволяют менять поиск и проверять его на одних и тех же вопросах.
+
+LLM, реранкер и пользовательский интерфейс пока не подключены. Конкретная LLM не выбрана; Cross-Encoder и Ragas относятся к планам развития. `uv`, Pydantic Settings и Streamlit из примера оформления также пока не используются. Текущая конфигурация читает `QDRANT_URL`, `QDRANT_COLLECTION` и `FASTEMBED_CACHE_PATH` из переменных окружения; автоматической загрузки `.env` нет.
+
+В проекте используется Python-конвейер подготовки данных и гибридного поиска: NASA LLIS → очистка → чанки → эмбеддинги → Qdrant → оценка найденных фрагментов. Ниже зафиксирован фактически реализованный стек. Версии Python-библиотек указаны по `requirements.txt`, версия сервера — по `infra/docker-compose.yml`.
+
+| Компонент | Технология | Роль в проекте и причина использования |
+| :--- | :--- | :--- |
+| Язык | Python, заявленная поддержка 3.10+ | Обработка текстов, команды подготовки данных, индексация и оценка в одной кодовой базе. |
+| Окружение и зависимости | `venv`, `pip`, `requirements.txt` | Изолированное окружение и явно закреплённые версии прямых зависимостей. |
+| HTTP-запросы | Requests 2.34.2 | Загрузка записей NASA LLIS через API с обработкой повторных запросов. |
+| HTML-парсинг | BeautifulSoup4 4.15.0 | Разбор HTML уроков перед преобразованием в очищенный текст с Markdown-разметкой. |
+| Представление документов | LangChain Core 1.6.10 | Единый объект `Document` для текста, идентификатора и метаданных. |
+| Разбиение текста | LangChain Text Splitters 1.1.3 | Рекурсивное разбиение длинных секций с перекрытием, чтобы сохранить контекст. |
+| Проверка токенов | Hugging Face `tokenizers` | Подсчёт токенов чанков токенизатором BGE; импортируется напрямую, но отдельная версия в `requirements.txt` пока не закреплена. |
+| Вычисление эмбеддингов | FastEmbed 0.9.0 | Локальное построение векторов через ONNX; текущий сценарий рассчитан на CPU. |
+| Семантическая модель | `BAAI/bge-base-en-v1.5` | Англоязычные dense-векторы размерности 768 для поиска по смыслу. |
+| Лексическая модель | `Qdrant/bm25` | Sparse-поиск для терминов, аббревиатур и номеров; IDF учитывается на стороне Qdrant. |
+| Векторная база | Qdrant 1.19.2 | Хранение обоих типов векторов и метаданных, фильтрация и гибридный поиск с объединением рангов RRF. |
+| Клиент базы | qdrant-client 1.19.1 | Создание коллекции, payload-индексов и обращение к серверу. |
+| Интеграция поиска | langchain-qdrant 1.1.0 | Доступ к Qdrant как к `QdrantVectorStore`, режимы dense, sparse и hybrid. |
+| Запуск инфраструктуры | Docker и Docker Compose | Воспроизводимый запуск сервера Qdrant с постоянным томом данных. |
+| Форматы хранения | JSON, JSONL, CSV, Markdown | JSON для уроков и метрик, JSONL для чанков, CSV и Markdown для просмотра бенчмарка. |
+| Оценка качества | Собственные Python-скрипты, два Gold Set по 50 вопросов | Проверка цитат и расчёт Lesson Hit@k, Quote Hit@k, MRR@10 и времени поиска. |
+| Управление исходниками | Git и GitHub | История изменений, совместная работа и хранение кода, документации и подготовленных наборов. |
+
+Такое сочетание уже используется в коде: BGE находит близкие по смыслу фрагменты, BM25 дополняет его точными совпадениями, а Qdrant объединяет результаты. Отдельные модули подготовки и оценки позволяют менять поиск и проверять его на одних и тех же вопросах.
+
+LLM, реранкер и пользовательский интерфейс пока не подключены. Конкретная LLM не выбрана; Cross-Encoder и Ragas относятся к планам развития. `uv`, Pydantic Settings и Streamlit из примера оформления также пока не используются. Текущая конфигурация читает `QDRANT_URL`, `QDRANT_COLLECTION` и `FASTEMBED_CACHE_PATH` из переменных окружения; автоматической загрузки `.env` нет.
 
 ```mermaid
 flowchart TD
@@ -96,7 +148,7 @@ flowchart TD
 ## Что реализовано
 
 ### Phase 1 — данные и бенчмарк
-1. **Парсинг всей базы LLIS** ([llis_scraper.py](llis_scraper.py)): запросы к Elasticsearch API с детерминированной сортировкой `[{"lesson_date": "desc"}, {"_id": "asc"}]`, повторы при сетевых ошибках. Из 2 135 записей сохранено **2 116 уроков**, 19 пустых или тестовых отбраковано. Сырой ответ API сохраняется в `llis_raw.json`, повторная обработка без обращения к API: `python llis_scraper.py --from-raw llis_raw.json`.
+1. **Парсинг всей базы LLIS** ([llis_scraper.py](src/data_pipeline/llis_scraper.py)): запросы к Elasticsearch API с детерминированной сортировкой `[{"lesson_date": "desc"}, {"_id": "asc"}]`, повторы при сетевых ошибках. Из 2 135 записей сохранено **2 116 уроков**, 19 пустых или тестовых отбраковано. Сырой ответ API сохраняется в `data/raw/llis_raw.json`, повторная обработка без обращения к API: `python -m src.data_pipeline.llis_scraper --from-raw data/raw/llis_raw.json`.
 2. **Очистка HTML → Markdown:** вложенные списки `<ul>/<ol>` (пустые пункты отбрасываются), таблицы, индексы (`H_2O`, `10^6`), HTML-сущности (`&deg;` → `°`). Переносы строк задают только теги, как в браузере; битая разметка из базы NASA нормализуется (`</br>`, `</</TD>`, курсив вплотную к слову, потерянные кавычки `quot`, «Â¹»). Заглушки (`None`, `N/A`, `See attached PDF`, `See Lessons Learned`, `Click here to view…`) удаляются.
 3. **Секции и метаданные:**
    * секции `Abstract`, `Driving Event`, `Lesson Learned`, `Recommendation`, `Evidence of Recurrence Control Effectiveness` (что сделано после урока) и `Related Documents and Policy` (нормативы вроде NPR 7120.5 — их хорошо находит BM25);
@@ -104,10 +156,10 @@ flowchart TD
    * метаданные: `lesson_id`, `title`, `date`, `year`, `org_code`, `program`, `program_phase`, `categories` (написание «&»/«and» унифицировано), `keywords`, `attachments` (названия и ссылки на вложения), `url`;
    * 12 уроков без названия в API («None») получают название из первой фразы текста (`title_derived: true`);
    * уроки с полностью совпадающим текстом помечаются `duplicate_of`.
-4. **Gold Set 50** ([generate_gold_set.py](generate_gold_set.py)): 50 вопросов на английском с точными ответами, цитатой-подтверждением (`Context_Quote`) и ссылкой на урок. Экспорт в CSV (UTF-8 BOM), JSON, Markdown.
+4. **Gold Set 50** ([generate_gold_set.py](src/evaluation/generate_gold_set.py)): 50 вопросов на английском с точными ответами, цитатой-подтверждением (`Context_Quote`) и ссылкой на урок. Экспорт в CSV (UTF-8 BOM), JSON, Markdown.
 
 ### Phase 2 — обработанный датасет и Qdrant
-5. **Чанкинг** ([build_chunks.py](build_chunks.py)):
+5. **Чанкинг** ([build_chunks.py](src/data_pipeline/build_chunks.py)):
    * урок делится по смысловым секциям — чанк не смешивает «что случилось» и «что рекомендовано»;
    * длинные секции режутся `RecursiveCharacterTextSplitter` (1 200 символов, перекрытие 150);
    * в начало каждого чанка добавляется `[NASA LLIS #id] Название` + `Section: ...`;
@@ -116,11 +168,11 @@ flowchart TD
    * одинаковый текст хранится одним чанком: повторы секций внутри урока сливаются всегда, а между уроками — только длинные фрагменты (от 300 символов; например, 45 уроков о закупках комиссии CAIB с одинаковым текстом). Все вхождения перечислены в `lesson_ids` и `sections`;
    * детерминированный ID чанка `<lesson_id>:<section>:<index>` → UUID точки в Qdrant, поэтому повторная индексация не создает дублей;
    * все 50 цитат Gold Set целиком лежат внутри одного чанка.
-6. **Qdrant** ([docker-compose.yml](docker-compose.yml), [qdrant_store.py](qdrant_store.py), [index_qdrant.py](index_qdrant.py)):
+6. **Qdrant** ([docker-compose.yml](infra/docker-compose.yml), [qdrant_store.py](src/retrieval/qdrant_store.py), [index_qdrant.py](src/retrieval/index_qdrant.py)):
    * коллекция `nasa_llis`: вектор `dense` (768, cosine) + вектор `sparse` (BM25, IDF на стороне Qdrant);
    * payload-индексы по `lesson_id`, `lesson_ids`, `org_code`, `section`, `sections`, `categories`, `program`, `keywords`, `year` для фильтрации;
    * доступ через LangChain `QdrantVectorStore` в режимах `DENSE`, `SPARSE`, `HYBRID`.
-7. **Проверка** ([check_qdrant.py](check_qdrant.py)): состояние коллекции, демо-запросы, оценка ретривера на Gold Set.
+7. **Проверка** ([check_qdrant.py](src/evaluation/check_qdrant.py)): состояние коллекции, демо-запросы, оценка ретривера на Gold Set.
 
 ---
 
@@ -132,7 +184,7 @@ flowchart TD
 * **Дополнительные метаданные:** программа у 424 уроков, фаза программы у 387, ключевые слова у 101, вложения у 92.
 * **Длина урока:** медиана 2 670 символов (~670 токенов), максимум 53 524.
 
-**Чанки** (`llis_chunks.jsonl`):
+**Чанки** (`data/processed/llis_chunks.jsonl`):
 * **12 471 чанк** из 2 116 уроков; 308 одинаковых копий слиты, 255 чанков относятся сразу к нескольким урокам;
 * по секциям: Driving Event 5 275 · Lesson Learned 2 424 · Recommendation 2 379 · Abstract 1 075 · Evidence 1 014 · References 304;
 * длина: медиана ~660 символов / 135 токенов, максимум 490 токенов (лимит модели 512).
@@ -162,18 +214,18 @@ flowchart TD
 
 ### Hard Gold Set (`gold_set_hard`, 50 вопросов)
 
-`generate_gold_set_hard.py` → `gold_set_hard.json`. Набор дополняет `gold_set_50` (формат тот же, плюс поля `filter`, `relevant_lesson_ids` и `lexical_overlap`):
+`generate_gold_set_hard.py` → `data/benchmarks/gold_set_hard.json`. Набор дополняет `gold_set_50` (формат тот же, плюс поля `filter`, `relevant_lesson_ids` и `lexical_overlap`):
 
 * все 50 вопросов по урокам **1990–2009** гг. (20 из 1990-х, 30 из 2000-х), 13 центров;
 * ответы в секциях **Recommendation (18), Lesson Learned (17), Evidence (9), References (5)** и Driving Event (1);
 * вопросы **перефразированы** так, как их задал бы инженер, без аббревиатур и терминов отчета («self-igniting propellants» вместо *hypergolic*, «squib» вместо *NASA Standard Initiator*). Доля значимых слов вопроса, которые дословно есть в цитате, в среднем 0.14 (максимум 0.40);
 * **14 вопросов с фильтром**: `org_code` (KSC, JSC, SSC, AFRC, GRC, GSFC, MSFC, ARC) или `program` (Mars Phoenix, MSL, LRO, Cassini, MER, ISS program);
 * **5 вопросов, ответ на которые есть в нескольких уроках** (`relevant_lesson_ids`): потеря Mars Climate Orbiter, Mars Polar Lander, зеркало Hubble, test-as-you-fly (10 уроков), requirements creep (7 уроков). Засчитывается любой из уроков;
-* генератор проверяет каждую цитату: она дословно есть в `full_text` урока и в указанной секции, целиком лежит в одном чанке `llis_chunks.jsonl`, у которого в `metadata.lesson_ids` есть этот урок; фильтр совпадает с метаданными урока. При ошибке скрипт завершается с ошибкой.
+* генератор проверяет каждую цитату: она дословно есть в `full_text` урока и в указанной секции, целиком лежит в одном чанке `data/processed/llis_chunks.jsonl`, у которого в `metadata.lesson_ids` есть этот урок; фильтр совпадает с метаданными урока. При ошибке скрипт завершается с ошибкой.
 
 ```bash
-python generate_gold_set_hard.py
-python check_qdrant.py --eval-only --gold gold_set_hard.json   # -> retrieval_eval_hard.json
+python -m src.evaluation.generate_gold_set_hard
+python -m src.evaluation.check_qdrant --eval-only --gold data/benchmarks/gold_set_hard.json   # -> retrieval_eval_hard.json
 ```
 
 | Режим | Lesson Hit@1 | Lesson Hit@5 | Lesson Hit@10 | Quote Hit@5 | Quote Hit@10 | MRR@10 | мс/запрос |
@@ -210,28 +262,28 @@ Lesson Hit@5 / MRR@10 по срезам (Hybrid — один прогон):
 
 ```text
 Houston/
-├── llis_scraper.py       # Сбор и очистка всей базы NASA LLIS -> llis_full.json
-├── llis_full.json        # [Датасет] 2 116 очищенных уроков с метаданными
-├── llis_raw.json         # Сырой ответ API (не в git, создается скрейпером)
-├── inspect_dataset.py    # Статистика датасета
-│
-├── build_chunks.py       # Чанкинг (LangChain) -> llis_chunks.jsonl
-├── llis_chunks.jsonl     # [Обработанный датасет] 12 471 чанк, готовый к индексации
-├── rag_loader.py         # Загрузка уроков и чанков как LangChain Document
-│
-├── docker-compose.yml    # Qdrant v1.19.2
-├── qdrant_store.py       # Конфигурация коллекции, эмбеддинги, LangChain QdrantVectorStore
-├── index_qdrant.py       # Индексация чанков в Qdrant
-├── check_qdrant.py       # Проверка коллекции и оценка поиска на Gold Set
-├── retrieval_eval.json   # Результаты последней оценки на gold_set_50
-├── retrieval_eval_hard.json # Результаты последней оценки на gold_set_hard
-│
-├── generate_gold_set.py  # Генератор и верификатор Gold Set
-├── gold_set_50.csv/json/md
-├── generate_gold_set_hard.py # Генератор и верификатор Hard Gold Set (1990–2009, перефразированные вопросы)
-├── gold_set_hard.json
-└── requirements.txt
+├── src/                         # Исходный код приложения
+│   ├── README.md
+│   ├── settings.py              # Единые пути к данным и кэшу
+│   ├── data_pipeline/           # Сбор, очистка, загрузка и чанкинг
+│   ├── retrieval/               # Qdrant и индексация
+│   ├── evaluation/              # Gold Set и метрики поиска
+│   └── tools/                   # Проверка датасета
+├── data/
+│   ├── README.md
+│   ├── raw/                     # Сырые ответы API, не коммитятся
+│   ├── processed/               # Очищенные уроки и чанки
+│   ├── benchmarks/              # Gold Set в JSON, CSV и Markdown
+│   └── evaluation/              # Результаты оценки ретривера
+├── infra/
+│   ├── README.md
+│   └── docker-compose.yml       # Qdrant 1.19.2
+├── requirements.txt             # Python-зависимости
+├── .gitignore
+└── README.md
 ```
+
+В каждом смысловом каталоге есть собственный `README.md` с назначением модулей и командами запуска.
 
 ---
 
@@ -244,22 +296,22 @@ venv\Scripts\activate            # Linux/Mac: source venv/bin/activate
 pip install -r requirements.txt
 
 # 2. Qdrant (нужен Docker Desktop)
-docker compose up -d             # дашборд: http://localhost:6333/dashboard
+docker compose -f infra/docker-compose.yml up -d             # дашборд: http://localhost:6333/dashboard
 
 # 3. Данные (готовые файлы уже в репозитории, шаги можно пропустить)
-python llis_scraper.py           # вся база LLIS -> llis_full.json
-python build_chunks.py           # -> llis_chunks.jsonl
+python -m src.data_pipeline.llis_scraper           # вся база LLIS -> llis_full.json
+python -m src.data_pipeline.build_chunks           # -> llis_chunks.jsonl
 
 # 4. Индексация (~35 мин на CPU; при первом запуске скачиваются модели ~0.5 ГБ)
-python index_qdrant.py --recreate
+python -m src.retrieval.index_qdrant --recreate
 
 # 5. Проверка и оценка
-python check_qdrant.py
+python -m src.evaluation.check_qdrant
 ```
 
 ### Использование в коде
 ```python
-from qdrant_store import get_vector_store, field_filter
+from src.retrieval.qdrant_store import get_vector_store, field_filter
 
 store = get_vector_store()  # гибридный поиск: bge-base + BM25, RRF
 docs = store.similarity_search(

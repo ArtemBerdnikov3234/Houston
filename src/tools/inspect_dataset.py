@@ -1,8 +1,8 @@
 """Скрипт для экспресс-анализа и проверки качества подготовленных датасетов NASA LLIS.
 
 Запуск:
-    python inspect_dataset.py                    # Проверит самый свежий файл llis_*.json
-    python inspect_dataset.py llis_full.json     # Проверит конкретный файл
+    python -m src.tools.inspect_dataset
+    python -m src.tools.inspect_dataset data/processed/llis_full.json
 """
 
 import glob
@@ -10,8 +10,10 @@ import json
 import os
 import sys
 
+from src.settings import PROCESSED_DATA_DIR
+
 # Определяем файл для анализа: аргумент командной строки или самый свежий json
-files = sys.argv[1:] or sorted(glob.glob("llis_*.json"), key=os.path.getmtime, reverse=True)
+files = sys.argv[1:] or sorted(glob.glob(str(PROCESSED_DATA_DIR / "llis_*.json")), key=os.path.getmtime, reverse=True)
 if not files:
     print("Не найдено файлов llis_*.json для анализа")
     sys.exit(0)

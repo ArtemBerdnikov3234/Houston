@@ -9,10 +9,10 @@
    - Quote Hit@k  — среди top-k есть именно тот чанк, который содержит эталонную цитату;
    - MRR@10       — средний обратный ранг первого чанка нужного урока.
 
-Запуск:  python check_qdrant.py            # всё
-         python check_qdrant.py --eval-only
-         python check_qdrant.py --eval-only --gold gold_set_hard.json
-Результат оценки сохраняется в retrieval_eval.json (gold_set_50) или retrieval_eval_<набор>.json.
+Запуск:  python -m src.evaluation.check_qdrant
+         python -m src.evaluation.check_qdrant --eval-only
+         python -m src.evaluation.check_qdrant --eval-only --gold data/benchmarks/gold_set_hard.json
+Результат сохраняется в data/evaluation/.
 """
 
 import argparse
@@ -24,8 +24,9 @@ import time
 from langchain_qdrant import FastEmbedSparse, RetrievalMode
 from qdrant_client import models
 
-from qdrant_store import (CACHE_DIR, COLLECTION, SPARSE_MODEL, BGEEmbeddings, field_filter,
-                          get_client, get_vector_store)
+from src.retrieval.qdrant_store import (CACHE_DIR, COLLECTION, SPARSE_MODEL, BGEEmbeddings, field_filter,
+                                        get_client, get_vector_store)
+from src.settings import BENCHMARKS_DIR, EVALUATION_DIR
 
 K = 10
 DEMO_QUERIES = [
@@ -133,11 +134,11 @@ def main():
     sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser()
     parser.add_argument("--eval-only", action="store_true")
-    parser.add_argument("--gold", default="gold_set_50.json", help="JSON Gold Set (например, gold_set_hard.json)")
+    parser.add_argument("--gold", default=str(BENCHMARKS_DIR / "gold_set_50.json"), help="JSON Gold Set (например, gold_set_hard.json)")
     parser.add_argument("--out", help="файл результатов (по умолчанию retrieval_eval.json / retrieval_eval_<набор>.json)")
     args = parser.parse_args()
     stem = os.path.splitext(os.path.basename(args.gold))[0]
-    out = args.out or ("retrieval_eval.json" if stem == "gold_set_50" else f"retrieval_eval_{stem.removeprefix('gold_set_')}.json")
+    out = args.out or str(EVALUATION_DIR / ("retrieval_eval.json" if stem == "gold_set_50" else f"retrieval_eval_{stem.removeprefix('gold_set_')}.json"))
 
     client = get_client()
     dense, sparse = BGEEmbeddings(), FastEmbedSparse(model_name=SPARSE_MODEL, cache_dir=CACHE_DIR)

@@ -4,9 +4,9 @@
 сохраняет метаданные и структуру документа в формате Markdown, готовом к чанкингу в LangChain.
 
 Установка:  pip install requests beautifulsoup4
-Запуск:     python llis_scraper.py                         # скачать всю базу и обработать
-            python llis_scraper.py --from-raw llis_raw.json  # переобработать сохраненный ответ API
-Результат:  llis_full.json (вся база LLIS), llis_raw.json (сырой ответ API)
+Запуск:     python -m src.data_pipeline.llis_scraper
+            python -m src.data_pipeline.llis_scraper --from-raw data/raw/llis_raw.json
+Результат:  data/processed/llis_full.json и data/raw/llis_raw.json
 """
 
 import argparse
@@ -22,6 +22,8 @@ from typing import Any, Dict, List, Optional
 import requests
 from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 
+from src.settings import PROCESSED_DATA_DIR, RAW_DATA_DIR
+
 warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
 
 # ==================== КОНФИГУРАЦИЯ ====================
@@ -33,7 +35,7 @@ PAGE_SIZE = 50          # Размер пачки в одном API-запрос
 PAUSE = 0.4             # Пауза между запросами (сек)
 RETRIES = 4             # Число повторов запроса при сетевой ошибке
 OUTPUT_PREFIX = "llis_full" if not (ORG or MAX_RECORDS) else f"llis_{ORG or 'all'}_{MAX_RECORDS or 'all'}"
-RAW_PATH = "llis_raw.json"
+RAW_PATH = str(RAW_DATA_DIR / "llis_raw.json")
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)",
@@ -515,7 +517,7 @@ def main():
     rejected = len(hits) - len(records)
     duplicates = mark_duplicates(records)
 
-    json_path = f"{OUTPUT_PREFIX}.json"
+    json_path = str(PROCESSED_DATA_DIR / f"{OUTPUT_PREFIX}.json")
 
     print("\nСохранение файлов...")
     with open(json_path, "w", encoding="utf-8") as f:

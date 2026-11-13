@@ -1,18 +1,19 @@
 """Индексация чанков NASA LLIS в Qdrant (dense bge-base-en-v1.5 + sparse BM25).
 
-Требует запущенный Qdrant:  docker compose up -d
+Требует запущенный Qdrant:  docker compose -f infra/docker-compose.yml up -d
 Запуск:
-    python index_qdrant.py              # загрузить llis_chunks.jsonl (идемпотентно, upsert)
-    python index_qdrant.py --recreate   # удалить коллекцию и проиндексировать заново
-    python index_qdrant.py --limit 200  # быстрый пробный прогон на первых N чанках
+    python -m src.retrieval.index_qdrant
+    python -m src.retrieval.index_qdrant --recreate
+    python -m src.retrieval.index_qdrant --limit 200
 """
 
 import argparse
 import sys
 import time
 
-from qdrant_store import COLLECTION, QDRANT_URL, create_collection, get_client, get_vector_store, point_id
-from rag_loader import load_chunks
+from src.data_pipeline.rag_loader import load_chunks
+from src.retrieval.qdrant_store import COLLECTION, QDRANT_URL, create_collection, get_client, get_vector_store, point_id
+from src.settings import PROCESSED_DATA_DIR
 
 BATCH_SIZE = 128
 
@@ -20,7 +21,7 @@ BATCH_SIZE = 128
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--chunks", default="llis_chunks.jsonl")
+    parser.add_argument("--chunks", default=str(PROCESSED_DATA_DIR / "llis_chunks.jsonl"))
     parser.add_argument("--recreate", action="store_true", help="пересоздать коллекцию с нуля")
     parser.add_argument("--limit", type=int, default=None, help="проиндексировать только первые N чанков")
     args = parser.parse_args()

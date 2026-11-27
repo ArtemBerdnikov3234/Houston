@@ -65,3 +65,6 @@ qdrant_storage/
 # Raw API dump (re-created by llis_scraper.py, ~MBs)
 data/raw/*.json
 !data/raw/.gitkeep
+
+# Pytest cache
+.pytest_cache/

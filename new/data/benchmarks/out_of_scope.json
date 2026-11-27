@@ -1,0 +1,14 @@
+[
+  {"id": "oos-1", "type": "general", "question": "Who won the 2018 FIFA World Cup?"},
+  {"id": "oos-2", "type": "general", "question": "What is a good recipe for sourdough bread?"},
+  {"id": "oos-3", "type": "general", "question": "How do I configure a Kubernetes ingress controller with TLS certificates?"},
+  {"id": "oos-4", "type": "general", "question": "What is the recommended daily intake of vitamin D for adults?"},
+  {"id": "oos-5", "type": "general", "question": "What caused the sinking of the Titanic?"},
+  {"id": "oos-6", "type": "near_domain", "question": "Why did the Indian Chandrayaan-2 Vikram lander crash on the Moon?"},
+  {"id": "oos-7", "type": "near_domain", "question": "How did SpaceX catch the Starship Super Heavy booster with the launch tower arms?"},
+  {"id": "oos-8", "type": "near_domain", "question": "What anomalies did the Mars helicopter Ingenuity experience during its final flight?"},
+  {"id": "oos-9", "type": "near_domain", "question": "What lessons did JAXA learn from the Hayabusa2 sample return capsule recovery?"},
+  {"id": "oos-10", "type": "near_domain", "question": "Why did the Philae lander bounce when it landed on comet 67P?"},
+  {"id": "oos-11", "type": "near_domain", "question": "What failure caused the Soyuz MS-10 launch abort in 2018?"},
+  {"id": "oos-12", "type": "near_domain", "question": "What caused the Israeli Beresheet lunar lander to crash?"}
+]

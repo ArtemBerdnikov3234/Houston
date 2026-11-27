@@ -6,7 +6,12 @@ beautifulsoup4==4.15.0
 langchain-core==1.6.10
 langchain-text-splitters==1.1.3
 
-# Векторная БД и эмбеддинги (следующий шаг: индексация в Qdrant)
+# Векторная БД, эмбеддинги и реранкер (FastEmbed: bge-base, BM25, bge-reranker-base)
 qdrant-client==1.19.1
 langchain-qdrant==1.1.0
 fastembed==0.9.0
+
+# Поиск: LangChain BaseRetriever и pydantic уже входят в langchain-core
+
+# Тесты
+pytest>=8

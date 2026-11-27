@@ -1,0 +1,5 @@
+# Оценка ответов RAG через Ragas (необязательно: тянет langchain, langchain-community, openai, datasets).
+# Ставится поверх основных зависимостей, чтобы pip не обновил закрепленный langchain-core:
+#   pip install -r requirements-eval.txt
+-r requirements.txt
+ragas==0.4.4

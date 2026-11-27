@@ -9,7 +9,7 @@
 [![Vector DB: Qdrant](https://img.shields.io/badge/Vector%20DB-Qdrant%201.19-dc244c.svg)](https://qdrant.tech/)
 [![Framework: LangChain](https://img.shields.io/badge/Framework-LangChain-1c3c3c.svg)](https://www.langchain.com/)
 [![Benchmark: Gold Set 50](https://img.shields.io/badge/Benchmark-50%20QA%20Pairs-success.svg)](./data/benchmarks/gold_set_50.csv)
-[![Status: Phase 2](https://img.shields.io/badge/Phase%202-Qdrant%20%26%20Dataset%20Ready-brightgreen.svg)]()
+[![Status: Phase 3](https://img.shields.io/badge/Phase%203-Retrieval%20%2B%20Reranking-brightgreen.svg)]()
 
 ---
 
@@ -34,6 +34,8 @@ API NASA LLIS
   -> build_chunks.py  -> llis_chunks.jsonl  (чанки для поиска)
   -> index_qdrant.py  -> Qdrant             (векторная база)
   -> check_qdrant.py  + gold_set_*.json     -> метрики качества поиска
+  -> retriever.py     -> контекст для LLM   (обработка запроса, гибрид, реранкер, отбор контекста)
+  -> eval_retriever.py / tune_top_k.py      -> вклад каждого этапа поиска, подбор Top-K
 ```
 
 **Код**
@@ -45,6 +47,13 @@ API NASA LLIS
 | `qdrant_store.py` | Общие настройки: адрес Qdrant, модели эмбеддингов, схема коллекции, функция `get_vector_store()` для поиска |
 | `index_qdrant.py` | Считает векторы чанков (смысловой bge-base и BM25) и загружает их в Qdrant |
 | `check_qdrant.py` | Проверяет коллекцию, показывает демо-запросы, считает качество поиска на Gold Set |
+| `retrieval/config.py` | Все параметры поиска (`RetrieverConfig`): режим, Top-K, реранкер, отбор контекста; базовая линия `BASELINE` |
+| `retrieval/search.py` | Семантический, BM25 и гибридный поиск напрямую через Query API Qdrant (RRF / DBSF, отдельный `prefetch_k`) |
+| `retrieval/query_processing.py` | Нормализация вопроса, словарь аббревиатур NASA из данных, подсказки-фильтры (центр, период, номер урока), варианты названий программ |
+| `retrieval/reranker.py` | Переранжирование кандидатов Cross-Encoder'ом `BAAI/bge-reranker-base` (FastEmbed, ONNX, CPU) |
+| `retrieval/context.py` | Отбор контекста: порог реранкера, группировка по урокам, соседние секции урока, бюджет токенов, текст с метками `[LLIS #id]` |
+| `retrieval/retriever.py` | `HoustonRetriever` — весь конвейер поиска как LangChain `BaseRetriever`; CLI для ручной проверки |
+| `eval_retriever.py`, `tune_top_k.py` | Оценка вклада каждого этапа поиска на обоих Gold Set; подбор `candidate_k`, `final_k` и порога реранкера |
 | `generate_gold_set.py`, `generate_gold_set_hard.py` | Хранят эталонные вопросы с ответами и проверяют, что каждая цитата-ответ есть в данных |
 | `rag_loader.py` | Загрузка уроков и чанков в виде LangChain `Document` |
 | `inspect_dataset.py` | Быстрая статистика датасета |
@@ -57,11 +66,15 @@ API NASA LLIS
 | `data/processed/llis_chunks.jsonl` | 12 471 чанк: текст фрагмента + метаданные, по строке на чанк | Обработанный датасет, который загружается в Qdrant |
 | `data/benchmarks/gold_set_50.json` (+ `.csv`, `.md`) | 50 эталонных вопросов с ответами и цитатами (2010–2025 гг.) | Основной бенчмарк; CSV — таблица для проверки, MD — отчет |
 | `data/benchmarks/gold_set_hard.json` | 50 трудных перефразированных вопросов (1990–2009 гг.) | Бенчмарк, на котором видны слабые места поиска |
+| `data/processed/abbreviations.json` | 643 аббревиатуры NASA с расшифровками, собранные из текстов уроков | Раскрытие аббревиатур в запросе к BM25 |
 | `data/evaluation/retrieval_eval.json`, `data/evaluation/retrieval_eval_hard.json` | Метрики последней оценки поиска | История качества |
+| `data/evaluation/retriever_eval_*.json`, `top_k_tuning_*.json` | Результаты `eval_retriever.py` и `tune_top_k.py` | Сравнение этапов поиска и выбор Top-K |
 
 **Конфигурация:** `infra/docker-compose.yml` (запуск Qdrant), `requirements.txt` (библиотеки Python).
 
-**Не хранится в репозитории** (создается командами из раздела «Быстрый старт»): `venv/` (окружение Python), `.fastembed_cache/` (модели эмбеддингов, ~0.5 ГБ), `qdrant_storage/` (файлы базы Qdrant), `data/raw/llis_raw.json` (сырой ответ API для повторной обработки без скачивания).
+**Тесты:** `tests/` (pytest, работают без Qdrant-сервера и без скачивания моделей).
+
+**Не хранится в репозитории** (создается командами из раздела «Быстрый старт»): `venv/` (окружение Python), `.fastembed_cache/` (модели эмбеддингов и реранкера, ~1.5 ГБ), `qdrant_storage/` (файлы базы Qdrant), `data/raw/llis_raw.json` (сырой ответ API для повторной обработки без скачивания).
 
 ---
 
@@ -91,7 +104,7 @@ API NASA LLIS
 
 Такое сочетание уже используется в коде: BGE находит близкие по смыслу фрагменты, BM25 дополняет его точными совпадениями, а Qdrant объединяет результаты. Отдельные модули подготовки и оценки позволяют менять поиск и проверять его на одних и тех же вопросах.
 
-LLM, реранкер и пользовательский интерфейс пока не подключены. Конкретная LLM не выбрана; Cross-Encoder и Ragas относятся к планам развития. `uv`, Pydantic Settings и Streamlit из примера оформления также пока не используются. Текущая конфигурация читает `QDRANT_URL`, `QDRANT_COLLECTION` и `FASTEMBED_CACHE_PATH` из переменных окружения; автоматической загрузки `.env` нет.
+Реранкер (Cross-Encoder `BAAI/bge-reranker-base` через FastEmbed) и конвейер поиска `HoustonRetriever` подключены на этапе Phase 3. LLM (Mistral API), цепочка генерации и Ragas — следующий этап; пользовательский интерфейс не планируется. `uv`, Pydantic Settings и Streamlit из примера оформления также пока не используются. Текущая конфигурация читает `QDRANT_URL`, `QDRANT_COLLECTION` и `FASTEMBED_CACHE_PATH` из переменных окружения; автоматической загрузки `.env` нет.
 
 В проекте используется Python-конвейер подготовки данных и гибридного поиска: NASA LLIS → очистка → чанки → эмбеддинги → Qdrant → оценка найденных фрагментов. Ниже зафиксирован фактически реализованный стек. Версии Python-библиотек указаны по `requirements.txt`, версия сервера — по `infra/docker-compose.yml`.
 
@@ -117,7 +130,7 @@ LLM, реранкер и пользовательский интерфейс п�
 
 Такое сочетание уже используется в коде: BGE находит близкие по смыслу фрагменты, BM25 дополняет его точными совпадениями, а Qdrant объединяет результаты. Отдельные модули подготовки и оценки позволяют менять поиск и проверять его на одних и тех же вопросах.
 
-LLM, реранкер и пользовательский интерфейс пока не подключены. Конкретная LLM не выбрана; Cross-Encoder и Ragas относятся к планам развития. `uv`, Pydantic Settings и Streamlit из примера оформления также пока не используются. Текущая конфигурация читает `QDRANT_URL`, `QDRANT_COLLECTION` и `FASTEMBED_CACHE_PATH` из переменных окружения; автоматической загрузки `.env` нет.
+Реранкер (Cross-Encoder `BAAI/bge-reranker-base` через FastEmbed) и конвейер поиска `HoustonRetriever` подключены на этапе Phase 3. LLM (Mistral API), цепочка генерации и Ragas — следующий этап; пользовательский интерфейс не планируется. `uv`, Pydantic Settings и Streamlit из примера оформления также пока не используются. Текущая конфигурация читает `QDRANT_URL`, `QDRANT_COLLECTION` и `FASTEMBED_CACHE_PATH` из переменных окружения; автоматической загрузки `.env` нет.
 
 ```mermaid
 flowchart TD
@@ -138,9 +151,11 @@ flowchart TD
 | **1. Ingestion** | `Requests`, `BeautifulSoup4`, `Regex` | NASA API возвращает JSON с HTML внутри; BS4 и Regex очищают HTML без разрыва списков и таблиц. | готово |
 | **2. Chunking** | `LangChain` (`langchain-text-splitters`) | Деление по секциям урока + рекурсивная нарезка длинных секций; в каждом чанке заголовок урока и секции. | готово |
 | **3. Embeddings** | `BAAI/bge-base-en-v1.5` (dense) + `Qdrant/bm25` (sparse) через `FastEmbed` | Сильная открытая модель для английского, ONNX-инференс на CPU без PyTorch; BM25 ловит точные шифры и номера стандартов. | готово |
-| **4. Vector DB & Search** | `Qdrant 1.19` в Docker + `langchain-qdrant` | Нативные dense + sparse векторы и гибридный поиск (RRF) в одной коллекции, фильтрация по payload-индексам. | готово |
-| **5. Reranking** | Cross-Encoder (напр. `bge-reranker-base`) | Отсекает ложные срабатывания, оставляет топ-3–5 фрагментов. | в планах |
-| **6. Generation** | LLM (выбор на следующем этапе) | Генерация ответа строго по найденному контексту со ссылками на уроки. | в планах |
+| **4. Vector DB & Search** | `Qdrant 1.19` в Docker, Query API (`prefetch` + RRF / DBSF) | Нативные dense + sparse векторы и гибридный поиск в одной коллекции, фильтрация по payload-индексам; размер выборки каждой ветви задается отдельно. | готово |
+| **4a. Query processing** | Regex, словарь аббревиатур из данных | Аббревиатуры NASA раскрываются для BM25, центр / период / номер урока из вопроса становятся мягкими фильтрами, варианты названий программ объединяются. | готово |
+| **5. Reranking** | Cross-Encoder `BAAI/bge-reranker-base` (FastEmbed, ONNX) | Переоценивает 30 кандидатов гибрида парой «вопрос — фрагмент», поднимает секцию с ответом. | готово |
+| **5a. Context selection** | `HoustonRetriever` (LangChain `BaseRetriever`) | Порог реранкера, до 5 уроков по ≤ 3 фрагмента, соседние секции урока (small-to-big), бюджет ~6 000 токенов. | готово |
+| **6. Generation** | Mistral API через `langchain-mistralai` | Генерация ответа строго по найденному контексту со ссылками на уроки. | в планах |
 | **7. Evaluation** | Gold Set 50 + `check_qdrant.py`, далее `Ragas` | Hit@k / MRR ретривера сейчас; *Faithfulness*, *Context Recall* после подключения LLM. | частично |
 
 ---
@@ -173,6 +188,19 @@ flowchart TD
    * payload-индексы по `lesson_id`, `lesson_ids`, `org_code`, `section`, `sections`, `categories`, `program`, `keywords`, `year` для фильтрации;
    * доступ через LangChain `QdrantVectorStore` в режимах `DENSE`, `SPARSE`, `HYBRID`.
 7. **Проверка** ([check_qdrant.py](src/evaluation/check_qdrant.py)): состояние коллекции, демо-запросы, оценка ретривера на Gold Set.
+
+### Phase 3 — алгоритмы поиска (RAG Retrieval)
+8. **Семантический и гибридный поиск** ([search.py](src/retrieval/search.py)): поиск идет напрямую через Query API Qdrant, а не через `similarity_search`. Вопрос векторизуется один раз; в гибридном режиме каждая ветвь (dense и BM25) берет `prefetch_k` кандидатов, после слияния остается `candidate_k`. Слияние — RRF (по рангам) или DBSF (по нормированным score). Фильтры: точное значение, список значений, диапазон (`{"year": {"gte": 1990, "lte": 1999}}`).
+9. **Обработка запросов** ([query_processing.py](src/retrieval/query_processing.py)):
+   * нормализация текста (Unicode, типографские кавычки и тире, пробелы);
+   * словарь из 643 аббревиатур строится автоматически по шаблону «Полное Название (АББР)» в текстах уроков, с проверкой, что буквы названия дают аббревиатуру (`Electrostatic Discharge (ESD)`, `Failure Modes and Effects Analysis (FMEA)`); многозначные берутся только при явном преобладании одного значения. К запросу BM25 дописываются расшифровки (`NSI` → `nasa standard initiator`) и обратно; dense-запрос не меняется;
+   * подсказки-фильтры из вопроса: центр (`at Goddard` → `GSFC`), период (`in the 1990s`, `between 2000 and 2005`, `since 2010`), номер урока (`lesson 5437`). Они **мягкие**: к основной выдаче добавляется выдача с фильтром, обе сливаются через RRF, и реранкер решает, что важнее. Одиночный год (`the 1999 Mars orbiter`) фильтром не считается — это обычно год события, а не публикации урока. Тест проверяет, что на обоих Gold Set подсказка по центру ни разу не противоречит правильному уроку;
+   * явный фильтр `program` расширяется на все варианты написания в базе (`Lunar Reconnaissance Orbiter` → `+ ... TWTA`, `MSL` → `Mars Science Laboratory (MSL)`) — решение проблемы, найденной на Hard Gold Set.
+10. **Top-K** ([config.py](src/retrieval/config.py), [tune_top_k.py](src/evaluation/tune_top_k.py)): `prefetch_k=50` на ветвь → `candidate_k=30` в реранкер → `final_k=5` уроков в LLM. Скрипт подбора выполняет поиск и реранкинг один раз на максимальную глубину и перебирает значения по префиксам выдачи; рекомендует наименьшее `candidate_k` в пределах 0.01 MRR от лучшего и порог реранкера, сохраняющий 95% эталонных фрагментов.
+11. **Переранжирование** ([reranker.py](src/retrieval/reranker.py)): Cross-Encoder `BAAI/bge-reranker-base` через `fastembed.TextCrossEncoder` — тот же ONNX-стек на CPU, что и эмбеддинги, без PyTorch. При равных оценках сохраняется порядок гибрида, поэтому результат детерминирован.
+12. **Отбор контекста** ([context.py](src/retrieval/context.py)): фрагменты ниже порога отбрасываются (лучший остается всегда); фрагменты группируются по урокам — до `final_k` уроков, до 3 фрагментов на урок, всего до 10; найденная секция короче 2 400 символов подставляется целиком; к уроку добавляются Driving Event / Lesson Learned / Recommendation (до 1 200 символов каждая, с пометкой `added for context`); блоки укладываются в бюджет ~6 000 токенов, при нехватке сначала убираются добавленные секции. Текст контекста размечен `[LLIS #id] Title (центр, год, программа)` + URL — на эти метки LLM будет ссылаться.
+13. **HoustonRetriever** ([retriever.py](src/retrieval/retriever.py)): весь конвейер как LangChain `BaseRetriever` (`invoke`, `batch`, LCEL). `retrieve()` возвращает все этапы (обработанный запрос, кандидаты, ранги после реранкера, контекст, время каждого шага); `invoke()` — по одному `Document` на урок.
+14. **Оценка и тесты** ([eval_retriever.py](src/evaluation/eval_retriever.py), [tests/](tests/)): лестница конфигураций `baseline → +abbreviations → +hints → +candidates → +rerank → full` на обоих Gold Set с метриками ранжирования (Hit@k, Quote Hit@k, MRR) и контекста (есть ли нужный урок и цитата в том, что получит LLM, размер контекста, время). 25 тестов pytest на in-memory Qdrant с реальными чанками и лексическими заглушками моделей.
 
 ---
 
@@ -256,6 +284,29 @@ Lesson Hit@5 / MRR@10 по срезам (Hybrid — один прогон):
 * **Вопросы с несколькими уроками** — самая слабая группа (Hybrid MRR@10 0.64; Dense 0.47). Обобщающий вопрос («что говорят разборы программ о росте требований») попадает в общие уроки по управлению проектами, а не в конкретные.
 * **Hybrid недетерминирован:** при равных RRF-оценках порядок чанков меняется от прогона к прогону. Поэтому Hit@1 на Hard Set колеблется в пределах 0.66–0.70, MRR@10 — 0.76–0.78, а на `gold_set_50` Hit@1 — 0.96–0.98. Dense и Sparse стабильны. Для сравнения моделей усредняйте несколько прогонов или задайте детерминированный tie-break.
 
+### Конвейер HoustonRetriever (Phase 3)
+
+```bash
+python -m src.evaluation.eval_retriever                  # оба Gold Set -> data/evaluation/retriever_eval_ablation.json
+python -m src.evaluation.eval_retriever --suite search   # dense / BM25 / hybrid RRF / hybrid DBSF
+python -m src.evaluation.tune_top_k                      # Hard Gold Set -> data/evaluation/top_k_tuning_hard.json
+```
+
+Каждая строка добавляет один этап к предыдущей; `baseline` воспроизводит прежний поиск (hybrid RRF top-10, в контекст 5 первых фрагментов).
+
+| Конфигурация | Что добавлено |
+| :--- | :--- |
+| `baseline` | hybrid RRF, `prefetch_k = candidate_k = 10`, без реранкера |
+| `+abbreviations` | раскрытие аббревиатур в BM25-запросе |
+| `+hints` | мягкие подсказки-фильтры из вопроса, варианты написания программ |
+| `+candidates` | `prefetch_k=50`, `candidate_k=30` |
+| `+rerank` | Cross-Encoder `bge-reranker-base` |
+| `full` | отбор контекста: порог, группировка по урокам, small-to-big, бюджет (конфигурация по умолчанию) |
+
+* Метрики ранжирования (Lesson Hit@k, Quote Hit@k, MRR@10) считаются по первым 10 фрагментам после реранкера — их можно сравнивать с таблицами выше.
+* Метрики контекста показывают, что получит LLM: `ctx_lesson_recall` — есть ли нужный урок, `ctx_quote_recall` — есть ли эталонная цитата в тексте контекста, а также среднее число уроков, токенов и время на запрос.
+* Результаты на реальных моделях: _таблицы будут добавлены после прогона `eval_retriever` и `tune_top_k`._
+
 ---
 
 ## Структура репозитория
@@ -266,8 +317,8 @@ Houston/
 │   ├── README.md
 │   ├── settings.py              # Единые пути к данным и кэшу
 │   ├── data_pipeline/           # Сбор, очистка, загрузка и чанкинг
-│   ├── retrieval/               # Qdrant и индексация
-│   ├── evaluation/              # Gold Set и метрики поиска
+│   ├── retrieval/               # Qdrant, индексация и конвейер поиска (HoustonRetriever)
+│   ├── evaluation/              # Gold Set, метрики поиска, подбор Top-K
 │   └── tools/                   # Проверка датасета
 ├── data/
 │   ├── README.md
@@ -275,6 +326,7 @@ Houston/
 │   ├── processed/               # Очищенные уроки и чанки
 │   ├── benchmarks/              # Gold Set в JSON, CSV и Markdown
 │   └── evaluation/              # Результаты оценки ретривера
+├── tests/                       # pytest: обработка запросов, поиск, отбор контекста
 ├── infra/
 │   ├── README.md
 │   └── docker-compose.yml       # Qdrant 1.19.2
@@ -307,6 +359,11 @@ python -m src.retrieval.index_qdrant --recreate
 
 # 5. Проверка и оценка
 python -m src.evaluation.check_qdrant
+
+# 6. Конвейер поиска (при первом запуске скачивается реранкер ~1 ГБ)
+python -m src.retrieval.retriever "Why did the Mars Climate Orbiter fail?"
+python -m src.evaluation.eval_retriever
+python -m pytest -q tests
 ```
 
 ### Использование в коде
@@ -325,7 +382,18 @@ for d in docs:
 # Только рекомендации (поле sections учитывает и слитые одинаковые секции)
 recs = store.similarity_search("cryogenic line venting", k=5, filter=field_filter("sections", "recommendation"))
 
-retriever = store.as_retriever(search_kwargs={"k": 20})  # для RAG-цепочки LangChain
+# Полный конвейер поиска для RAG: обработка запроса -> гибрид -> реранкер -> отбор контекста
+from src.retrieval.retriever import HoustonRetriever
+from src.retrieval.config import RetrieverConfig
+
+retriever = HoustonRetriever.from_config(RetrieverConfig(final_k=4))
+docs = retriever.invoke("How to prevent hydrogen leaks on the launch pad?", filters={"org_code": "KSC"})
+for d in docs:                                   # один Document на урок
+    print(d.metadata["source_label"], d.metadata["title"], d.metadata["matched_sections"])
+
+result = retriever.retrieve("What did the squib failures teach about pyrotechnic testing?")
+print(result.query.describe())                   # раскрытые аббревиатуры, подсказки-фильтры
+print(result.context_text)                       # готовый текст контекста с метками [LLIS #id]
 ```
 
 ---
@@ -339,7 +407,10 @@ retriever = store.as_retriever(search_kwargs={"k": 20})  # для RAG-цепоч
 - [x] Qdrant в Docker, dense (`bge-base-en-v1.5`) + sparse (BM25) векторы
 - [x] Гибридный поиск (RRF) и оценка ретривера на Gold Set
 - [x] Hard Gold Set: трудные перефразированные вопросы по урокам 1990–2009 гг.
-- [ ] Гибридный поиск с запасом кандидатов в каждой ветви (сейчас LangChain берет по k из dense и BM25 до слияния)
-- [ ] Подключение реранкера (Cross-Encoder)
-- [ ] Выбор LLM и RAG-цепочка генерации ответов со ссылками на уроки
+- [x] Гибридный поиск с запасом кандидатов в каждой ветви (Query API, `prefetch_k` / `candidate_k`, RRF и DBSF)
+- [x] Обработка запросов: аббревиатуры NASA, мягкие фильтры из вопроса, нормализация программ
+- [x] Подключение реранкера (Cross-Encoder `bge-reranker-base`)
+- [x] Отбор контекста для LLM и `HoustonRetriever` (LangChain)
+- [ ] Прогон `eval_retriever` / `tune_top_k` на реальных моделях и фиксация Top-K
+- [ ] RAG-цепочка на Mistral API: промпты, ответы со ссылками на уроки, история диалога
 - [ ] Автоматический расчет метрик Ragas (*Faithfulness*, *Answer Relevance*, *Context Recall*)

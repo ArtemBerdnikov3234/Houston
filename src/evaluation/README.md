@@ -3,6 +3,8 @@
 - `generate_gold_set.py` создаёт основной Gold Set из 50 вопросов в JSON, CSV и Markdown.
 - `generate_gold_set_hard.py` создаёт и проверяет усложнённый Gold Set по старым урокам и менее буквальным формулировкам.
 - `check_qdrant.py` проверяет коллекцию и считает Hit@k, Quote Hit@k и MRR@10 для dense, sparse и hybrid-поиска.
+- `eval_retriever.py` оценивает конвейер `HoustonRetriever` по этапам (`baseline → +abbreviations → +hints → +candidates → +rerank → full`) и режимы первичного поиска (`--suite search`), включая метрики контекста для LLM.
+- `tune_top_k.py` подбирает `prefetch_k`, `candidate_k`, `final_k` и порог реранкера.
 
 Бенчмарки сохраняются в `data/benchmarks/`, результаты прогонов — в `data/evaluation/`.
 
@@ -17,5 +19,9 @@
 1. При изменении датасета выполните `python -m src.evaluation.generate_gold_set` и `python -m src.evaluation.generate_gold_set_hard`. Эти команды читают подготовленные данные и перезаписывают файлы бенчмарков; Qdrant им не требуется.
 2. После индексации выполните `python -m src.evaluation.check_qdrant`. Команда покажет состояние коллекции, примеры поиска и метрики основного набора.
 3. Для Hard-набора используйте `python -m src.evaluation.check_qdrant --eval-only --gold data/benchmarks/gold_set_hard.json`.
+4. Конвейер поиска: `python -m src.evaluation.eval_retriever` (оба набора, ~10–20 мин на CPU из-за реранкера), `--only baseline,full` для быстрого сравнения, `--suite search` для режимов поиска.
+5. Подбор Top-K: `python -m src.evaluation.tune_top_k` (Hard-набор по умолчанию), `--gold data/benchmarks/gold_set_50.json` для основного, `--rerank-model Xenova/ms-marco-MiniLM-L-6-v2` для сравнения с быстрым реранкером.
+
+Метрики `eval_retriever.py`: ранжирование считается по первым 10 фрагментам после реранкера (сравнимо с `check_qdrant.py`); `ctx_lesson_recall` и `ctx_quote_recall` — есть ли нужный урок и эталонная цитата в контексте, который получит LLM; `ctx_lessons`, `ctx_tokens` — размер контекста; `latency_ms` — полное время конвейера на вопрос.
 
 По умолчанию оценка перезаписывает соответствующий отчёт в `data/evaluation/`. Для сохранения отдельного эксперимента задайте `--out data/evaluation/my_run.json`. Сравнивайте прогоны на одинаковых данных и настройках; порядок результатов hybrid-поиска может различаться при равных оценках.

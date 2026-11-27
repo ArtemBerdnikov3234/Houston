@@ -1,4 +1,4 @@
-"""Оценка RAG-цепочки Houston (поиск + Mistral) на Gold Set и на вопросах вне базы.
+"""Оценка RAG-цепочки Houston (поиск + LLM из .env) на Gold Set и на вопросах вне базы.
 
 Для каждого вопроса сохраняются ответ, источники и контекст (data/evaluation/rag_answers_<набор>.jsonl),
 затем считаются метрики.
@@ -13,7 +13,8 @@
   correct_refusal   — для out_of_scope.json: доля вопросов вне базы, на которые модель честно отказала;
   latency_s, tokens — среднее время и токены на вопрос.
 
-Ragas (--ragas, нужен pip install -r requirements-eval.txt), судья — Mistral через OpenAI-совместимый API:
+Ragas (--ragas, нужен pip install -r requirements-eval.txt), судья — тот же провайдер (LLM_PROVIDER) через
+OpenAI-совместимый API; модель-судья — LLM_JUDGE_MODEL (на Groq по умолчанию openai/gpt-oss-20b):
   faithfulness       — утверждения ответа подтверждаются контекстом;
   answer_relevancy   — ответ отвечает именно на вопрос (эмбеддинги bge-base);
   context_precision  — релевантные уроки стоят в контексте выше (с эталонным ответом);
@@ -24,6 +25,7 @@ Ragas (--ragas, нужен pip install -r requirements-eval.txt), судья —
     python -m src.evaluation.eval_rag                              # оба Gold Set + вопросы вне базы
     python -m src.evaluation.eval_rag --ragas --limit 20           # + метрики Ragas
     python -m src.evaluation.eval_rag --resume                     # продолжить после обрыва (лимиты API)
+    python -m src.evaluation.eval_rag --limit 15 --sleep 20        # Groq free: ~8K токенов/мин, ~200K/день
     python -m src.evaluation.eval_rag --ragas-only                 # Ragas по уже сохраненным ответам
 Итог: data/evaluation/rag_eval.json и таблица в консоли.
 """
@@ -31,7 +33,6 @@ Ragas (--ragas, нужен pip install -r requirements-eval.txt), судья —
 import argparse
 import json
 import math
-import os
 import sys
 import time
 from pathlib import Path
@@ -41,7 +42,6 @@ from src.settings import BENCHMARKS_DIR, EVALUATION_DIR
 
 GOLD_SETS = [BENCHMARKS_DIR / "gold_set_50.json", BENCHMARKS_DIR / "gold_set_hard.json"]
 OUT_OF_SCOPE = BENCHMARKS_DIR / "out_of_scope.json"
-MISTRAL_BASE_URL = "https://api.mistral.ai/v1"
 CONTEXT_SEPARATOR = "\n\n---\n\n"          # разделитель уроков в format_context
 
 
@@ -159,18 +159,16 @@ def bge_ragas_embedding(model=None):
 
 
 def ragas_judge(model: str):
-    """Mistral как судья Ragas: OpenAI-совместимый клиент + instructor (JSON-режим)."""
+    """Судья Ragas: провайдер из .env (Groq, Mistral, ...) через OpenAI-совместимый клиент + instructor (JSON)."""
     from openai import AsyncOpenAI
     from ragas.llms import llm_factory
 
-    from src.rag.llm import load_dotenv
+    from src.rag.llm import resolve_settings
 
-    load_dotenv()
-    key = os.getenv("MISTRAL_API_KEY")
-    if not key:
-        raise SystemExit("Для Ragas нужен MISTRAL_API_KEY")
-    client = AsyncOpenAI(api_key=key, base_url=MISTRAL_BASE_URL, max_retries=8, timeout=120)
-    return llm_factory(model, provider="openai", client=client, temperature=0.0, max_tokens=2048)
+    s = resolve_settings(model=model, temperature=0.0)
+    client = AsyncOpenAI(api_key=s.api_key, base_url=s.base_url, max_retries=8, timeout=s.timeout)
+    extra = {"reasoning_effort": s.reasoning_effort} if s.reasoning_effort else {}
+    return llm_factory(s.model, provider="openai", client=client, temperature=0.0, max_tokens=2048, **extra)
 
 
 def run_ragas(rows: List[dict], judge_model: str, sleep: float) -> Dict[str, float]:
@@ -252,10 +250,13 @@ def main():
     parser.add_argument("--sleep", type=float, default=1.0, help="пауза между вопросами, с (лимиты бесплатного тарифа)")
     parser.add_argument("--ragas", action="store_true", help="посчитать метрики Ragas")
     parser.add_argument("--ragas-only", action="store_true", help="только Ragas по сохраненным ответам")
-    parser.add_argument("--judge-model", default=os.getenv("MISTRAL_JUDGE_MODEL", "mistral-small-latest"))
+    parser.add_argument("--judge-model", help="модель-судья Ragas (по умолчанию LLM_JUDGE_MODEL / по провайдеру)")
     parser.add_argument("--out", default=str(EVALUATION_DIR / "rag_eval.json"))
     args = parser.parse_args()
 
+    if (args.ragas or args.ragas_only) and not args.judge_model:
+        from src.rag.llm import judge_model_default
+        args.judge_model = judge_model_default()
     gold_paths = [Path(p) for p in (args.gold or GOLD_SETS)]
     runs = [(p, "gold") for p in gold_paths] + ([] if args.no_oos else [(OUT_OF_SCOPE, "oos")])
 

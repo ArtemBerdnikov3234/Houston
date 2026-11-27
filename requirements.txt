@@ -13,5 +13,10 @@ fastembed==0.9.0
 
 # Поиск: LangChain BaseRetriever и pydantic уже входят в langchain-core
 
+# Генерация ответов: Groq / OpenRouter / Ollama / любой OpenAI-совместимый API (ChatOpenAI) и Mistral
+# (версии — последние, совместимые с langchain-core 1.6.10)
+langchain-openai==1.7.2
+langchain-mistralai==1.1.6
+
 # Тесты
 pytest>=8

@@ -24,7 +24,7 @@ using lessons from the NASA Lessons Learned Information System (LLIS).
 Rules:
 1. Use ONLY the lessons in the context. Do not add facts from your own knowledge, even if you are sure they are true.
 2. Cite every factual statement with the identifier of the lesson that supports it, written exactly as in the \
-context header, for example [LLIS #1234]. Put the citation at the end of the sentence. If several lessons support \
+context header, for example [LLIS #1234], with plain square brackets. Put the citation at the end of the sentence. If several lessons support \
 a statement, cite each: [LLIS #1234] [LLIS #5678]. Never cite an identifier that is not in the context.
 3. If the context does not contain the answer, reply with exactly this sentence and nothing else: "{NOT_FOUND_ANSWER}"
    If the context answers only part of the question, answer that part and say clearly what is not covered.

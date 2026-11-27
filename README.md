@@ -9,7 +9,7 @@
 [![Vector DB: Qdrant](https://img.shields.io/badge/Vector%20DB-Qdrant%201.19-dc244c.svg)](https://qdrant.tech/)
 [![Framework: LangChain](https://img.shields.io/badge/Framework-LangChain-1c3c3c.svg)](https://www.langchain.com/)
 [![Benchmark: Gold Set 50](https://img.shields.io/badge/Benchmark-50%20QA%20Pairs-success.svg)](./data/benchmarks/gold_set_50.csv)
-[![Status: Phase 3](https://img.shields.io/badge/Phase%203-Retrieval%20%2B%20Reranking-brightgreen.svg)]()
+[![Status: Phase 4](https://img.shields.io/badge/Phase%204-RAG%20Chain%20%2B%20LLM-brightgreen.svg)]()
 
 ---
 
@@ -36,6 +36,8 @@ API NASA LLIS
   -> check_qdrant.py  + gold_set_*.json     -> метрики качества поиска
   -> retriever.py     -> контекст для LLM   (обработка запроса, гибрид, реранкер, отбор контекста)
   -> eval_retriever.py / tune_top_k.py      -> вклад каждого этапа поиска, подбор Top-K
+  -> rag/chain.py     -> ответ LLM          (Groq / Mistral / Ollama; промпт, контекст, ссылки [LLIS #id], история)
+  -> eval_rag.py      -> качество ответов   (ссылки, отказы, Ragas)
 ```
 
 **Код**
@@ -54,6 +56,13 @@ API NASA LLIS
 | `retrieval/context.py` | Отбор контекста: порог реранкера, группировка по урокам, соседние секции урока, бюджет токенов, текст с метками `[LLIS #id]` |
 | `retrieval/retriever.py` | `HoustonRetriever` — весь конвейер поиска как LangChain `BaseRetriever`; CLI для ручной проверки |
 | `eval_retriever.py`, `tune_top_k.py` | Оценка вклада каждого этапа поиска на обоих Gold Set; подбор `candidate_k`, `final_k` и порога реранкера |
+| `rag/llm.py` | Подключение LLM: Groq (по умолчанию), Mistral, OpenRouter, Ollama или любой OpenAI-совместимый API; настройки из `.env`, повторы при 429 / 5xx, понятные ошибки ключа и оплаты |
+| `rag/prompts.py` | Промпт ответа (только по контексту, ссылки `[LLIS #id]`, фиксированный отказ) и промпт переформулировки вопроса |
+| `rag/citations.py` | Проверка ссылок в ответе, удаление ссылок вне контекста, список источников из метаданных, `RAGResponse` |
+| `rag/chain.py` | `HoustonRAG` — LCEL-цепочка: переформулировка → поиск → контекст → LLM → проверка ссылок |
+| `rag/memory.py` | `ConversationalRAG` — история диалога по сессиям, окно последних сообщений, сохранение в JSON |
+| `rag/ask.py` | CLI: один вопрос или диалог `--chat` |
+| `eval_rag.py` | Оценка ответов на обоих Gold Set и вопросах вне базы; метрики Ragas (судья — LLM того же провайдера) |
 | `generate_gold_set.py`, `generate_gold_set_hard.py` | Хранят эталонные вопросы с ответами и проверяют, что каждая цитата-ответ есть в данных |
 | `rag_loader.py` | Загрузка уроков и чанков в виде LangChain `Document` |
 | `inspect_dataset.py` | Быстрая статистика датасета |
@@ -69,8 +78,10 @@ API NASA LLIS
 | `data/processed/abbreviations.json` | 643 аббревиатуры NASA с расшифровками, собранные из текстов уроков | Раскрытие аббревиатур в запросе к BM25 |
 | `data/evaluation/retrieval_eval.json`, `data/evaluation/retrieval_eval_hard.json` | Метрики последней оценки поиска | История качества |
 | `data/evaluation/retriever_eval_*.json`, `top_k_tuning_*.json` | Результаты `eval_retriever.py` и `tune_top_k.py` | Сравнение этапов поиска и выбор Top-K |
+| `data/benchmarks/out_of_scope.json` | 12 вопросов, ответа на которые в LLIS нет (5 общих, 7 о чужих космических миссиях; отсутствие проверено по текстам) | Проверка, что модель честно отказывается, а не отвечает из своих знаний |
+| `data/evaluation/rag_answers_*.jsonl`, `rag_eval.json` | Ответы RAG с источниками и контекстом; сводные метрики | Качество генерации |
 
-**Конфигурация:** `infra/docker-compose.yml` (запуск Qdrant), `requirements.txt` (библиотеки Python).
+**Конфигурация:** `infra/docker-compose.yml` (запуск Qdrant), `requirements.txt` (библиотеки Python), `requirements-eval.txt` (Ragas, необязательно), `.env.example` (шаблон `.env`: провайдер LLM, ключ, размер контекста).
 
 **Тесты:** `tests/` (pytest, работают без Qdrant-сервера и без скачивания моделей).
 
@@ -104,7 +115,7 @@ API NASA LLIS
 
 Такое сочетание уже используется в коде: BGE находит близкие по смыслу фрагменты, BM25 дополняет его точными совпадениями, а Qdrant объединяет результаты. Отдельные модули подготовки и оценки позволяют менять поиск и проверять его на одних и тех же вопросах.
 
-Реранкер (Cross-Encoder `BAAI/bge-reranker-base` через FastEmbed) и конвейер поиска `HoustonRetriever` подключены на этапе Phase 3. LLM (Mistral API), цепочка генерации и Ragas — следующий этап; пользовательский интерфейс не планируется. `uv`, Pydantic Settings и Streamlit из примера оформления также пока не используются. Текущая конфигурация читает `QDRANT_URL`, `QDRANT_COLLECTION` и `FASTEMBED_CACHE_PATH` из переменных окружения; автоматической загрузки `.env` нет.
+Реранкер (Cross-Encoder `BAAI/bge-reranker-base` через FastEmbed) и конвейер поиска `HoustonRetriever` подключены на этапе Phase 3, генерация ответов (LLM через OpenAI-совместимый API, по умолчанию Groq), история диалога и оценка (собственные метрики + Ragas) — на этапе Phase 4. Пользовательский интерфейс не планируется: работа через CLI `python -m src.rag.ask`. `uv`, Pydantic Settings и Streamlit не используются. Конфигурация читается из переменных окружения; `LLM_*`, `HOUSTON_*` и ключи — также из файла `.env` в корне проекта (шаблон — `.env.example`).
 
 В проекте используется Python-конвейер подготовки данных и гибридного поиска: NASA LLIS → очистка → чанки → эмбеддинги → Qdrant → оценка найденных фрагментов. Ниже зафиксирован фактически реализованный стек. Версии Python-библиотек указаны по `requirements.txt`, версия сервера — по `infra/docker-compose.yml`.
 
@@ -130,7 +141,7 @@ API NASA LLIS
 
 Такое сочетание уже используется в коде: BGE находит близкие по смыслу фрагменты, BM25 дополняет его точными совпадениями, а Qdrant объединяет результаты. Отдельные модули подготовки и оценки позволяют менять поиск и проверять его на одних и тех же вопросах.
 
-Реранкер (Cross-Encoder `BAAI/bge-reranker-base` через FastEmbed) и конвейер поиска `HoustonRetriever` подключены на этапе Phase 3. LLM (Mistral API), цепочка генерации и Ragas — следующий этап; пользовательский интерфейс не планируется. `uv`, Pydantic Settings и Streamlit из примера оформления также пока не используются. Текущая конфигурация читает `QDRANT_URL`, `QDRANT_COLLECTION` и `FASTEMBED_CACHE_PATH` из переменных окружения; автоматической загрузки `.env` нет.
+Реранкер (Cross-Encoder `BAAI/bge-reranker-base` через FastEmbed) и конвейер поиска `HoustonRetriever` подключены на этапе Phase 3, генерация ответов (LLM через OpenAI-совместимый API, по умолчанию Groq), история диалога и оценка (собственные метрики + Ragas) — на этапе Phase 4. Пользовательский интерфейс не планируется: работа через CLI `python -m src.rag.ask`. `uv`, Pydantic Settings и Streamlit не используются. Конфигурация читается из переменных окружения; `LLM_*`, `HOUSTON_*` и ключи — также из файла `.env` в корне проекта (шаблон — `.env.example`).
 
 ```mermaid
 flowchart TD
@@ -155,8 +166,9 @@ flowchart TD
 | **4a. Query processing** | Regex, словарь аббревиатур из данных | Аббревиатуры NASA раскрываются для BM25, центр / период / номер урока из вопроса становятся мягкими фильтрами, варианты названий программ объединяются. | готово |
 | **5. Reranking** | Cross-Encoder `BAAI/bge-reranker-base` (FastEmbed, ONNX) | Переоценивает 30 кандидатов гибрида парой «вопрос — фрагмент», поднимает секцию с ответом. | готово |
 | **5a. Context selection** | `HoustonRetriever` (LangChain `BaseRetriever`) | Порог реранкера, до 5 уроков по ≤ 3 фрагмента, соседние секции урока (small-to-big), бюджет ~6 000 токенов. | готово |
-| **6. Generation** | Mistral API через `langchain-mistralai` | Генерация ответа строго по найденному контексту со ссылками на уроки. | в планах |
-| **7. Evaluation** | Gold Set 50 + `check_qdrant.py`, далее `Ragas` | Hit@k / MRR ретривера сейчас; *Faithfulness*, *Context Recall* после подключения LLM. | частично |
+| **6. Generation** | Groq `openai/gpt-oss-120b` через `langchain-openai` 1.7.2 (или Mistral, OpenRouter, Ollama — переключение в `.env`), LangChain LCEL | Ответ строго по контексту, ссылка `[LLIS #id]` после каждого утверждения; ссылки вне контекста удаляются, источники и URL берутся из метаданных. | готово |
+| **6a. Dialogue** | `ConversationalRAG` (история по сессиям) | Уточняющий вопрос переписывается в самостоятельный перед поиском; в промпт идут последние 6 сообщений. | готово |
+| **7. Evaluation** | Gold Set ×2 + `check_qdrant.py`, `eval_retriever.py`, `eval_rag.py`, `Ragas` 0.4 | Hit@k / MRR ретривера; ссылки на правильный урок, отказы, выдуманные источники; *Faithfulness*, *Answer Relevancy*, *Context Precision / Recall* (судья — `gpt-oss-20b` на Groq). | готово |
 
 ---
 
@@ -201,6 +213,15 @@ flowchart TD
 12. **Отбор контекста** ([context.py](src/retrieval/context.py)): фрагменты ниже порога отбрасываются (лучший остается всегда); фрагменты группируются по урокам — до `final_k` уроков, до 3 фрагментов на урок, всего до 10; найденная секция короче 2 400 символов подставляется целиком; к уроку добавляются Driving Event / Lesson Learned / Recommendation (до 1 200 символов каждая, с пометкой `added for context`); блоки укладываются в бюджет ~6 000 токенов, при нехватке сначала убираются добавленные секции. Текст контекста размечен `[LLIS #id] Title (центр, год, программа)` + URL — на эти метки LLM будет ссылаться.
 13. **HoustonRetriever** ([retriever.py](src/retrieval/retriever.py)): весь конвейер как LangChain `BaseRetriever` (`invoke`, `batch`, LCEL). `retrieve()` возвращает все этапы (обработанный запрос, кандидаты, ранги после реранкера, контекст, время каждого шага); `invoke()` — по одному `Document` на урок.
 14. **Оценка и тесты** ([eval_retriever.py](src/evaluation/eval_retriever.py), [tests/](tests/)): лестница конфигураций `baseline → +abbreviations → +hints → +candidates → +rerank → full` на обоих Gold Set с метриками ранжирования (Hit@k, Quote Hit@k, MRR) и контекста (есть ли нужный урок и цитата в том, что получит LLM, размер контекста, время). 25 тестов pytest на in-memory Qdrant с реальными чанками и лексическими заглушками моделей.
+
+### Phase 4 — цепочка RAG и генерация ответов (RAG Chain)
+15. **Подключение LLM** ([llm.py](src/rag/llm.py)): провайдер задается в `.env` (`LLM_PROVIDER`, `LLM_API_KEY`, `LLM_MODEL`): `groq` (по умолчанию, `openai/gpt-oss-120b`, `reasoning_effort=low`), `mistral`, `openrouter`, `ollama` (локально, без ключа) или `openai_compatible` с любым `LLM_BASE_URL`. Все, кроме Mistral, подключаются через `ChatOpenAI`, Mistral — через `ChatMistralAI`. Изначально цепочка делалась на Mistral, но в 2026 г. Mistral убрал бесплатный доступ к API (нужна оплата по факту), поэтому основной провайдер — бесплатный Groq. Ответы 429 (лимит запросов и токенов в минуту) и 5xx повторяются с паузой до 60 с; 400/401/402/403/404/413 не повторяются и выдаются как понятная ошибка с подсказкой (неверный ключ, нет оплаты, нет модели, слишком большой запрос). Версии `langchain-openai==1.7.2` и `langchain-mistralai==1.1.6` — последние, совместимые с закрепленным `langchain-core 1.6.10`.
+16. **Промпты** ([prompts.py](src/rag/prompts.py)): системный промпт запрещает внешние знания, требует ссылку `[LLIS #id]` после каждого утверждения и только на уроки из контекста, задает структуру (прямой ответ → **What happened** / **Root cause** / **Lesson learned** / **NASA recommendation** — только то, что есть в контексте; для фактических вопросов — коротко) и фиксированную фразу отказа, по которой код распознает «ответа нет». Отдельный промпт переписывает уточняющий вопрос в самостоятельный.
+17. **Передача контекста в LLM**: контекст — результат `HoustonRetriever` (до 5 уроков с метками `[LLIS #id] Title (центр, год, программа)`, URL и секциями урока); история диалога идет между системным промптом и вопросом. Если поиск ничего не вернул, LLM не вызывается.
+18. **RAG Chain** ([chain.py](src/rag/chain.py)): LCEL `condense → retrieve → generate → check_citations`; `HoustonRAG.ask(question, filters, chat_history)` возвращает `RAGResponse`; `rag.chain` — обычный Runnable (`invoke`, `batch`).
+19. **Ответы с источниками** ([citations.py](src/rag/citations.py)): ссылки нормализуются (`[LLIS #1, #2]` → `[LLIS #1] [LLIS #2]`), ссылки на уроки вне контекста удаляются из текста и сохраняются в `invalid_citations`, список источников (название, центр, год, URL) собирается из метаданных — модель не пишет URL сама. `RAGResponse` содержит ответ, процитированные и все найденные уроки, токены и время каждого этапа.
+20. **История диалога** ([memory.py](src/rag/memory.py)): `ConversationalRAG` хранит сообщения по `session_id`, в модель передает последние 6, хранит до 50, сохраняет / загружает сессию в JSON. Свое хранилище вместо `RunnableWithMessageHistory` / `InMemoryChatMessageHistory`: в `langchain-core 1.6` они объявлены устаревшими.
+21. **CLI и оценка** ([ask.py](src/rag/ask.py), [eval_rag.py](src/evaluation/eval_rag.py)): вопрос из командной строки или диалог `--chat`; оценка на обоих Gold Set и 12 вопросах вне базы — ответ со ссылкой на правильный урок, ложные отказы, выдуманные источники, ответы без ссылок, верные отказы, время, токены; Ragas 0.4 (новый API `metrics.collections`, судья — тот же провайдер через OpenAI-совместимый эндпоинт, на Groq — отдельная модель `gpt-oss-20b` со своей квотой токенов, эмбеддинги — bge-base проекта). Ответы сохраняются построчно, прогон продолжается с места обрыва (`--resume`). 15 тестов цепочки на заглушке LLM.
 
 ---
 
@@ -307,6 +328,27 @@ python -m src.evaluation.tune_top_k                      # Hard Gold Set -> data
 * Метрики контекста показывают, что получит LLM: `ctx_lesson_recall` — есть ли нужный урок, `ctx_quote_recall` — есть ли эталонная цитата в тексте контекста, а также среднее число уроков, токенов и время на запрос.
 * Результаты на реальных моделях: _таблицы будут добавлены после прогона `eval_retriever` и `tune_top_k`._
 
+### Ответы RAG (Phase 4)
+
+```bash
+python -m src.evaluation.eval_rag --limit 10        # быстрая проверка
+python -m src.evaluation.eval_rag                   # 50 + 50 вопросов Gold Set + 12 вопросов вне базы
+python -m src.evaluation.eval_rag --ragas-only      # метрики Ragas по сохраненным ответам
+```
+
+| Метрика | Что показывает |
+| :--- | :--- |
+| `cites_relevant` | ответ ссылается на правильный урок |
+| `context_relevant` | правильный урок был в контексте (потолок для `cites_relevant`) |
+| `false_refusal` | модель отказала, хотя правильный урок был в контексте |
+| `invalid_citations` | доля ответов со ссылкой на урок вне контекста (выдуманный источник; такие ссылки удаляются) |
+| `uncited_answers` | доля ответов без ссылок |
+| `correct_refusal` | вопросы вне базы, на которые модель честно ответила «не найдено» |
+| `faithfulness`, `answer_relevancy`, `context_precision`, `context_recall` | Ragas, судья — LLM (`LLM_JUDGE_MODEL`) |
+
+* Бесплатный Groq ограничивает `gpt-oss-120b` примерно 8 000 токенов в минуту и 200 000 в день, поэтому полный прогон (112 вопросов) растягивается на несколько дней: используйте `--limit`, `--resume` и `--sleep 20`.
+* Результаты: _таблица будет добавлена после прогона `eval_rag`._
+
 ---
 
 ## Структура репозитория
@@ -318,7 +360,8 @@ Houston/
 │   ├── settings.py              # Единые пути к данным и кэшу
 │   ├── data_pipeline/           # Сбор, очистка, загрузка и чанкинг
 │   ├── retrieval/               # Qdrant, индексация и конвейер поиска (HoustonRetriever)
-│   ├── evaluation/              # Gold Set, метрики поиска, подбор Top-K
+│   ├── rag/                     # LLM (Groq/Mistral/Ollama), промпты, RAG-цепочка, ссылки, история, CLI
+│   ├── evaluation/              # Gold Set, метрики поиска и ответов, подбор Top-K
 │   └── tools/                   # Проверка датасета
 ├── data/
 │   ├── README.md
@@ -326,11 +369,13 @@ Houston/
 │   ├── processed/               # Очищенные уроки и чанки
 │   ├── benchmarks/              # Gold Set в JSON, CSV и Markdown
 │   └── evaluation/              # Результаты оценки ретривера
-├── tests/                       # pytest: обработка запросов, поиск, отбор контекста
+├── tests/                       # pytest: поиск, отбор контекста, RAG-цепочка (без сети и моделей)
 ├── infra/
 │   ├── README.md
 │   └── docker-compose.yml       # Qdrant 1.19.2
 ├── requirements.txt             # Python-зависимости
+├── requirements-eval.txt        # + Ragas (необязательно)
+├── .env.example                 # шаблон .env: провайдер LLM, ключ, настройки
 ├── .gitignore
 └── README.md
 ```
@@ -364,6 +409,12 @@ python -m src.evaluation.check_qdrant
 python -m src.retrieval.retriever "Why did the Mars Climate Orbiter fail?"
 python -m src.evaluation.eval_retriever
 python -m pytest -q tests
+
+# 7. Ответы (скопируйте .env.example в .env и впишите LLM_API_KEY — ключ Groq: console.groq.com/keys)
+python -m src.rag.ask "Why did the Mars Climate Orbiter fail?"
+python -m src.rag.ask --chat                                  # диалог: /sources, /context, /reset, /exit
+pip install -r requirements-eval.txt                          # для Ragas
+python -m src.evaluation.eval_rag --limit 10 --ragas
 ```
 
 ### Использование в коде
@@ -394,6 +445,19 @@ for d in docs:                                   # один Document на уро
 result = retriever.retrieve("What did the squib failures teach about pyrotechnic testing?")
 print(result.query.describe())                   # раскрытые аббревиатуры, подсказки-фильтры
 print(result.context_text)                       # готовый текст контекста с метками [LLIS #id]
+
+# Ответ LLM со ссылками на уроки
+from src.rag.chain import HoustonRAG
+rag = HoustonRAG.from_defaults()
+resp = rag.ask("Why did the Mars Climate Orbiter fail?")
+print(resp.to_markdown())                        # ответ + Sources (название, центр, год, URL)
+print(resp.cited_ids, resp.invalid_citations, resp.usage, resp.timings_ms)
+
+# Диалог с историей
+from src.rag.memory import ConversationalRAG
+chat = ConversationalRAG(rag)
+chat.ask("Why did the Mars Climate Orbiter fail?", session_id="s1")
+print(chat.ask("What did NASA change afterwards?", session_id="s1").standalone_question)
 ```
 
 ---
@@ -412,5 +476,6 @@ print(result.context_text)                       # готовый текст к�
 - [x] Подключение реранкера (Cross-Encoder `bge-reranker-base`)
 - [x] Отбор контекста для LLM и `HoustonRetriever` (LangChain)
 - [ ] Прогон `eval_retriever` / `tune_top_k` на реальных моделях и фиксация Top-K
-- [ ] RAG-цепочка на Mistral API: промпты, ответы со ссылками на уроки, история диалога
-- [ ] Автоматический расчет метрик Ragas (*Faithfulness*, *Answer Relevance*, *Context Recall*)
+- [x] RAG-цепочка: промпты, ответы со ссылками на уроки, история диалога; LLM через OpenAI-совместимый API (Groq, Mistral, OpenRouter, Ollama)
+- [x] Автоматический расчет метрик Ragas (*Faithfulness*, *Answer Relevancy*, *Context Precision / Recall*)
+- [ ] Прогон `eval_rag` на Groq и фиксация метрик ответов

@@ -1,6 +1,7 @@
 """Ссылки на источники в ответе LLM и итоговая структура ответа.
 
-LLM пишет ссылки в тексте как [LLIS #1234] (варианты [LLIS #1, #2], [LLIS #1; LLIS #2] тоже понимаются).
+LLM пишет ссылки в тексте как [LLIS #1234] (варианты [LLIS #1, #2], [LLIS #1; LLIS #2], а также скобки
+【LLIS #1】, которые любит gpt-oss, тоже понимаются и приводятся к [LLIS #1]).
 process_answer():
   1. находит все ссылки и приводит их к виду [LLIS #id] [LLIS #id];
   2. удаляет ссылки на уроки, которых не было в контексте (галлюцинации), и сохраняет их в
@@ -73,10 +74,18 @@ class RAGResponse(BaseModel):
 
 # ==================== РАЗБОР ССЫЛОК ====================
 
+# Скобки, которыми модели оформляют ссылки вместо [ ]: gpt-oss пишет 【LLIS #1】, встречаются ［ ］ и 〔 〕
+_BRACKETS = str.maketrans({"【": "[", "】": "]", "［": "[", "］": "]", "〔": "[", "〕": "]", "〖": "[", "〗": "]"})
+
+
+def normalize_brackets(text: str) -> str:
+    return (text or "").translate(_BRACKETS)
+
+
 def extract_citations(text: str) -> List[str]:
     """ID уроков в порядке первого упоминания (без повторов)."""
     seen: List[str] = []
-    for group in _GROUP_RE.findall(text):
+    for group in _GROUP_RE.findall(normalize_brackets(text)):
         for lid in _ID_RE.findall(group):
             if lid not in seen:
                 seen.append(lid)
@@ -93,7 +102,7 @@ def clean_citations(text: str, allowed: set) -> tuple:
         invalid.extend(i for i in ids if i not in allowed and i not in invalid)
         return " ".join(f"[LLIS #{i}]" for i in dict.fromkeys(good))
 
-    cleaned = _GROUP_RE.sub(repl, text)
+    cleaned = _GROUP_RE.sub(repl, normalize_brackets(text))
     cleaned = re.sub(r"[ \t]+([.,;:])", r"\1", cleaned)        # пробел перед точкой после удаленной ссылки
     cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
     return cleaned.strip(), invalid

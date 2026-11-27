@@ -10,7 +10,7 @@
     команды в диалоге: /sources — все найденные уроки последнего ответа, /context — текст контекста,
                        /reset — очистить историю, /save <файл>, /load <файл>, /exit
 
-Нужен MISTRAL_API_KEY (переменная окружения или .env) и запущенный Qdrant с коллекцией nasa_llis.
+Нужны ключ LLM в .env (LLM_PROVIDER, LLM_API_KEY — см. .env.example) и запущенный Qdrant с коллекцией nasa_llis.
 """
 
 import argparse
@@ -57,12 +57,12 @@ def render_context_sources(resp: RAGResponse) -> str:
 def chat_loop(filters) -> None:
     from src.rag.memory import ConversationalRAG
 
-    from src.rag.llm import MissingAPIKeyError
+    from src.rag.llm import LLMRequestError
 
     print("Загрузка моделей поиска...")
     try:
         chat = ConversationalRAG.from_defaults()
-    except MissingAPIKeyError as exc:
+    except LLMRequestError as exc:
         raise SystemExit(str(exc))
     sid = "cli"
     print("Houston готов. Вопросы на английском; /exit — выход, /reset — новая тема, /sources, /context.\n")
@@ -120,13 +120,16 @@ def main():
         parser.error("укажите вопрос или --chat")
 
     from src.rag.chain import HoustonRAG
-    from src.rag.llm import MissingAPIKeyError
+    from src.rag.llm import LLMRequestError
 
     try:
         rag = HoustonRAG.from_defaults()
-    except MissingAPIKeyError as exc:
+    except LLMRequestError as exc:
         raise SystemExit(str(exc))
-    resp = rag.ask(args.question, filters=filters)
+    try:
+        resp = rag.ask(args.question, filters=filters)
+    except LLMRequestError as exc:
+        raise SystemExit(f"[ошибка LLM] {exc}")
     if args.json:
         print(resp.model_dump_json(indent=2))
         return

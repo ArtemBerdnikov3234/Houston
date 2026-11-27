@@ -4,12 +4,12 @@
       -> condense:  если есть история — LLM переписывает уточняющий вопрос в самостоятельный
       -> retrieve:  HoustonRetriever (обработка запроса, гибрид, реранкер, отбор контекста)
       -> context:   текст уроков с метками [LLIS #id] (format_context)
-      -> generate:  ANSWER_PROMPT | LLM; при пустом контексте LLM не вызывается (ответ "не найдено")
+      -> generate:  ANSWER_PROMPT | LLM (Groq, Mistral, ... — см. llm.py); при пустом контексте LLM не вызывается
       -> finalize:  проверка ссылок, список источников, токены, время -> RAGResponse
 
 Использование:
     from src.rag.chain import HoustonRAG
-    rag = HoustonRAG.from_defaults()                     # HoustonRetriever + Mistral
+    rag = HoustonRAG.from_defaults()                     # HoustonRetriever + LLM из .env (LLM_PROVIDER)
     resp = rag.ask("Why did the Mars Climate Orbiter fail?")
     print(resp.to_markdown())                            # ответ + Sources
     rag.chain.invoke({"question": "...", "filters": {"org_code": "JPL"}})   # та же цепочка как Runnable
@@ -23,7 +23,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import Runnable, RunnableLambda, RunnablePassthrough
 
 from src.rag.citations import RAGResponse, process_answer
-from src.rag.llm import get_llm, model_name
+from src.rag.llm import get_llm, model_name, resolve_settings
 from src.rag.prompts import ANSWER_PROMPT, CONDENSE_PROMPT, NOT_FOUND_ANSWER
 
 HISTORY_WINDOW = 6      # сколько последних сообщений истории (вопросы + ответы) видит модель
@@ -53,7 +53,7 @@ def format_documents(docs: List[Any]) -> str:
 
 
 class HoustonRAG:
-    """RAG по базе NASA LLIS: поиск HoustonRetriever + генерация Mistral со ссылками на уроки."""
+    """RAG по базе NASA LLIS: поиск HoustonRetriever + генерация LLM (Groq / Mistral / ...) со ссылками на уроки."""
 
     def __init__(self, retriever, llm: Runnable, history_window: int = HISTORY_WINDOW,
                  model: Optional[str] = None):
@@ -67,7 +67,9 @@ class HoustonRAG:
 
     @classmethod
     def from_defaults(cls, retriever=None, llm: Optional[Runnable] = None, **kwargs) -> "HoustonRAG":
-        llm = llm or get_llm()                 # сначала ключ API: без него не грузим модели поиска
+        if llm is None:                        # сначала ключ API: без него не грузим модели поиска
+            llm = get_llm()
+            kwargs.setdefault("model", resolve_settings().label)
         if retriever is None:
             from src.retrieval.retriever import HoustonRetriever
             retriever = HoustonRetriever.from_config()

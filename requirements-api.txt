@@ -1,0 +1,5 @@
+# API и интерфейс (добавляются к requirements.txt)
+fastapi
+uvicorn[standard]
+streamlit
+requests
